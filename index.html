@@ -373,6 +373,7 @@ textarea::placeholder{color:var(--td);}
     <div class="modb meet" onclick="abrirMeet()">🤝 Reunión</div>
     <div class="modb cam" onclick="abrirCam()">📷 Cámara IA</div>
     <div class="modb brief" onclick="quickMsg('Dame un briefing ejecutivo de todos mis proyectos activos ahora mismo')">📋 Briefing</div>
+    <div class="modb" style="border-color:rgba(245,158,11,.35);color:#fcd34d;background:rgba(245,158,11,.06);" id="btnInterpreter" onclick="toggleInterprete()">🌐 Intérprete</div>
   </div>
 
   <div class="msgs" id="msgs">
@@ -398,6 +399,52 @@ textarea::placeholder{color:var(--td);}
         <button class="ib ib-mic" id="btnMic" onclick="toggleMic()">🎙️</button>
         <button class="ib ib-send" onclick="enviar()">↑</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- INTÉRPRETE UNIVERSAL -->
+<div id="interpreterPanel" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(2,4,8,.98);flex-direction:column;align-items:center;padding:16px;overflow-y:auto;">
+  <div style="width:100%;max-width:420px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div style="font-size:16px;font-weight:800;background:linear-gradient(135deg,#f59e0b,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">🌐 Intérprete Universal</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px;">Cualquier idioma → Español en tiempo real</div>
+      </div>
+      <button onclick="cerrarInterprete()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#94a3b8;padding:7px 14px;border-radius:10px;font-size:12px;cursor:pointer;">✕ Cerrar</button>
+    </div>
+
+    <!-- Estado -->
+    <div id="interpStatus" style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:14px;text-align:center;margin-bottom:12px;">
+      <div style="font-size:28px;margin-bottom:6px;" id="interpIcon">🎧</div>
+      <div style="font-size:13px;font-weight:700;color:#fcd34d;" id="interpStatusTxt">Listo para escuchar</div>
+      <div style="font-size:11px;color:#64748b;margin-top:3px;" id="interpLang">Idioma detectado: —</div>
+    </div>
+
+    <!-- Botón principal -->
+    <button id="btnInterpStart" onclick="toggleInterpretarAudio()" style="width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#f59e0b,#f97316);color:#000;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:12px;">
+      🎙️ Iniciar Escucha
+    </button>
+
+    <!-- Idioma original -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px;margin-bottom:8px;min-height:80px;position:relative;">
+      <div style="position:absolute;top:-9px;left:12px;background:#020408;padding:0 6px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;">Original</div>
+      <div id="interpOriginal" style="font-size:13px;color:#94a3b8;line-height:1.6;font-style:italic;">Aquí aparecerá lo que se dice...</div>
+    </div>
+
+    <!-- Traducción en español -->
+    <div style="background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(249,115,22,.04));border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px;margin-bottom:8px;min-height:80px;position:relative;">
+      <div style="position:absolute;top:-9px;left:12px;background:#020408;padding:0 6px;font-size:10px;font-weight:700;color:#f59e0b;text-transform:uppercase;">🇪🇸 Traducción</div>
+      <div id="interpTraduccion" style="font-size:15px;color:#fef3c7;line-height:1.7;font-weight:500;">La traducción aparecerá aquí...</div>
+    </div>
+
+    <!-- Historial -->
+    <div id="interpHistorial" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;"></div>
+
+    <!-- Info -->
+    <div style="text-align:center;font-size:10px;color:#334155;margin-top:12px;line-height:1.6;">
+      Soporta: Inglés · Francés · Alemán · Italiano · Portugués<br>
+      Chino · Japonés · Árabe · Ruso · Holandés · y más
     </div>
   </div>
 </div>
@@ -904,6 +951,187 @@ async function pedirAccion(tipo){
   if(!txt||txt.includes('Escuchando')){toast('Habla primero, luego pulsa el botón');return;}
   bufferEscucha='';
   await procesarComando(txt,tipo);
+}
+
+// ════════════════════════════════════════════
+// MODO INTÉRPRETE UNIVERSAL — CUALQUIER IDIOMA
+// ════════════════════════════════════════════
+let interpretando=false, reconInterp=null, mrInterp=null, chunksInterp=[], interpTimer=null;
+
+function toggleInterprete(){
+  const panel=document.getElementById('interpreterPanel');
+  if(panel.style.display==='flex'){cerrarInterprete();}
+  else{panel.style.display='flex';panel.style.flexDirection='column';panel.style.alignItems='center';}
+}
+
+function cerrarInterprete(){
+  interpretando=false;
+  if(reconInterp){try{reconInterp.stop();}catch(e){}reconInterp=null;}
+  if(mrInterp&&mrInterp.state==='recording'){mrInterp.stop();}
+  clearInterval(interpTimer);
+  document.getElementById('interpreterPanel').style.display='none';
+  document.getElementById('btnInterpreter').style.borderColor='rgba(245,158,11,.35)';
+}
+
+async function toggleInterpretarAudio(){
+  if(interpretando){
+    // Parar
+    interpretando=false;
+    if(reconInterp){try{reconInterp.stop();}catch(e){}reconInterp=null;}
+    if(mrInterp&&mrInterp.state==='recording'){mrInterp.stop();}
+    clearInterval(interpTimer);
+    document.getElementById('btnInterpStart').textContent='🎙️ Iniciar Escucha';
+    document.getElementById('btnInterpStart').style.background='linear-gradient(135deg,#f59e0b,#f97316)';
+    document.getElementById('interpStatusTxt').textContent='Parado';
+    document.getElementById('interpIcon').textContent='⏸️';
+    return;
+  }
+
+  // Iniciar
+  interpretando=true;
+  document.getElementById('btnInterpStart').textContent='⏹ Detener';
+  document.getElementById('btnInterpStart').style.background='linear-gradient(135deg,#ef4444,#dc2626)';
+  document.getElementById('interpIcon').textContent='🔴';
+  document.getElementById('interpStatusTxt').textContent='Escuchando y detectando idioma...';
+
+  // Método 1: SpeechRecognition con detección automática (sin language fijo)
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(SR){
+    reconInterp=new SR();
+    reconInterp.continuous=true;
+    reconInterp.interimResults=true;
+    reconInterp.lang=''; // auto-detecta el idioma
+    
+    let bufferInterp='';
+    let timerTraduccion=null;
+
+    reconInterp.onresult=async(event)=>{
+      let interino='',final='';
+      for(let i=event.resultIndex;i<event.results.length;i++){
+        const t=event.results[i][0].transcript;
+        if(event.results[i].isFinal) final+=t;
+        else interino+=t;
+      }
+
+      const texto=(final||interino).trim();
+      if(texto){
+        document.getElementById('interpOriginal').textContent=texto;
+        bufferInterp=texto;
+
+        // Traducir automáticamente cuando hay texto final
+        if(final){
+          clearTimeout(timerTraduccion);
+          timerTraduccion=setTimeout(async()=>{
+            await traducirTextoInterprete(bufferInterp);
+            bufferInterp='';
+          },800);
+        }
+      }
+    };
+
+    reconInterp.onerror=(e)=>{
+      if(e.error==='no-speech')return;
+      if(e.error==='not-allowed'){
+        document.getElementById('interpStatusTxt').textContent='❌ Permite el micrófono';
+        return;
+      }
+      if(interpretando)setTimeout(()=>{try{reconInterp.start();}catch(err){}},500);
+    };
+
+    reconInterp.onend=()=>{
+      if(interpretando)setTimeout(()=>{try{reconInterp.start();}catch(e){}},300);
+    };
+
+    try{reconInterp.start();}catch(e){
+      // Fallback: grabación cada 8 segundos con Whisper
+      iniciarInterpWisper();
+    }
+  } else {
+    // Safari sin SR — usar grabación periódica con Whisper
+    iniciarInterpWisper();
+  }
+}
+
+async function iniciarInterpWisper(){
+  // Graba 8 segundos, transcribe con Whisper (auto-idioma), traduce, repite
+  document.getElementById('interpStatusTxt').textContent='Modo Whisper — segmentos de 8s';
+  
+  async function ciclo(){
+    if(!interpretando)return;
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      const mr=new MediaRecorder(stream);
+      const chunks=[];
+      mr.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+      mr.onstop=async()=>{
+        stream.getTracks().forEach(t=>t.stop());
+        if(!interpretando)return;
+        const blob=new Blob(chunks,{type:'audio/webm'});
+        
+        // Whisper sin language = auto-detecta
+        const fd=new FormData();
+        fd.append('file',blob,'audio.webm');
+        fd.append('model','whisper-1');
+        // Sin 'language' para auto-detección
+        try{
+          const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{
+            method:'POST',headers:{'Authorization':`Bearer ${CFG.openai}`},body:fd
+          });
+          const d=await r.json();
+          const texto=d.text?.trim();
+          if(texto && texto.length>3){
+            document.getElementById('interpOriginal').textContent=texto;
+            await traducirTextoInterprete(texto);
+          }
+        }catch(e){console.log('Whisper error:',e);}
+        
+        if(interpretando)setTimeout(ciclo,500);
+      };
+      mr.start();
+      setTimeout(()=>{if(mr.state==='recording')mr.stop();},8000);
+    }catch(e){
+      document.getElementById('interpStatusTxt').textContent='❌ Sin micrófono';
+    }
+  }
+  ciclo();
+}
+
+async function traducirTextoInterprete(texto){
+  if(!texto||texto.length<2)return;
+  document.getElementById('interpIcon').textContent='💭';
+  document.getElementById('interpStatusTxt').textContent='Traduciendo...';
+  
+  try{
+    const resp=await gpt([
+      {role:'system',content:'Eres un intérprete profesional. Detecta el idioma del texto y tradúcelo al español de forma natural y fluida. Si ya es español, mejora la claridad. Responde SOLO con la traducción, sin explicaciones ni etiquetas.'},
+      {role:'user',content:texto}
+    ],200);
+
+    document.getElementById('interpTraduccion').textContent=resp;
+    document.getElementById('interpIcon').textContent='✅';
+    document.getElementById('interpStatusTxt').textContent='Traducido ✓';
+    document.getElementById('interpLang').textContent='Traducción lista';
+
+    // Hablar la traducción en voz
+    await hablar(resp);
+
+    // Añadir al historial
+    const hist=document.getElementById('interpHistorial');
+    const item=document.createElement('div');
+    item.style.cssText='background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px 10px;font-size:12px;';
+    item.innerHTML=`<div style="color:#64748b;font-size:10px;margin-bottom:3px;">${new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</div><div style="color:#94a3b8;margin-bottom:4px;font-style:italic;">${texto.slice(0,80)}${texto.length>80?'...':''}</div><div style="color:#fef3c7;">→ ${resp}</div>`;
+    hist.insertBefore(item,hist.firstChild);
+    if(hist.children.length>20)hist.removeChild(hist.lastChild);
+
+    setTimeout(()=>{
+      document.getElementById('interpIcon').textContent='🔴';
+      document.getElementById('interpStatusTxt').textContent='Escuchando...';
+    },3000);
+
+  }catch(e){
+    document.getElementById('interpIcon').textContent='❌';
+    document.getElementById('interpStatusTxt').textContent='Error traduciendo';
+  }
 }
 
 function cerrarEscucha(){
