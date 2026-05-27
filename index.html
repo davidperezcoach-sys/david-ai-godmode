@@ -374,6 +374,7 @@ textarea::placeholder{color:var(--td);}
     <div class="modb cam" onclick="abrirCam()">📷 Cámara IA</div>
     <div class="modb brief" onclick="quickMsg('Dame un briefing ejecutivo de todos mis proyectos activos ahora mismo')">📋 Briefing</div>
     <div class="modb" style="border-color:rgba(245,158,11,.35);color:#fcd34d;background:rgba(245,158,11,.06);" id="btnInterpreter" onclick="toggleInterprete()">🌐 Intérprete</div>
+    <div class="modb" style="border-color:rgba(236,72,153,.35);color:#f9a8d4;background:rgba(236,72,153,.06);" id="btnConversacion" onclick="toggleConversacion()">🗣️ Conversación</div>
   </div>
 
   <div class="msgs" id="msgs">
@@ -447,6 +448,63 @@ textarea::placeholder{color:var(--td);}
       Chino · Japonés · Árabe · Ruso · Holandés · y más
     </div>
   </div>
+</div>
+
+<!-- CONVERSACIÓN BILINGÜE -->
+<div id="convPanel" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(2,4,8,.99);flex-direction:column;align-items:center;padding:0;overflow:hidden;">
+  
+  <!-- ZONA OTRO (arriba — girada 180°) -->
+  <div id="zonaOtro" style="flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;transform:rotate(180deg);border-bottom:2px solid rgba(6,182,212,.2);cursor:pointer;background:rgba(6,182,212,.03);position:relative;min-height:45%;" onclick="hablarOtro()">
+    <div id="convOtroStatus" style="font-size:11px;font-weight:700;color:#06b6d4;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">👆 PULSA PARA HABLAR</div>
+    <div id="convOtroIcon" style="font-size:52px;margin-bottom:8px;">🎙️</div>
+    <div id="convOtroTexto" style="font-size:14px;color:#67e8f9;text-align:center;line-height:1.6;max-width:320px;font-weight:500;">Toca para hablar en tu idioma</div>
+    <div id="convOtroTrad" style="font-size:13px;color:rgba(103,232,249,.6);text-align:center;margin-top:8px;font-style:italic;max-width:320px;"></div>
+  </div>
+
+  <!-- CENTRO — idioma selector + cerrar -->
+  <div style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(2,4,8,.98);border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:11px;color:#475569;">Mi idioma:</span>
+      <select id="convLangYo" style="background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#e2e8f0;padding:4px 8px;border-radius:8px;font-size:11px;">
+        <option value="es">🇪🇸 Español</option>
+        <option value="en">🇬🇧 Inglés</option>
+        <option value="fr">🇫🇷 Francés</option>
+        <option value="de">🇩🇪 Alemán</option>
+        <option value="it">🇮🇹 Italiano</option>
+        <option value="pt">🇵🇹 Portugués</option>
+        <option value="zh">🇨🇳 Chino</option>
+        <option value="ja">🇯🇵 Japonés</option>
+        <option value="ar">🇸🇦 Árabe</option>
+        <option value="ru">🇷🇺 Ruso</option>
+      </select>
+    </div>
+    <button onclick="cerrarConversacion()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">✕ Cerrar</button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <select id="convLangOtro" style="background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#e2e8f0;padding:4px 8px;border-radius:8px;font-size:11px;">
+        <option value="auto">🌐 Auto</option>
+        <option value="en">🇬🇧 Inglés</option>
+        <option value="fr">🇫🇷 Francés</option>
+        <option value="de">🇩🇪 Alemán</option>
+        <option value="it">🇮🇹 Italiano</option>
+        <option value="pt">🇵🇹 Portugués</option>
+        <option value="zh">🇨🇳 Chino</option>
+        <option value="ja">🇯🇵 Japonés</option>
+        <option value="ar">🇸🇦 Árabe</option>
+        <option value="ru">🇷🇺 Ruso</option>
+        <option value="es">🇪🇸 Español</option>
+      </select>
+      <span style="font-size:11px;color:#475569;">Su idioma:</span>
+    </div>
+  </div>
+
+  <!-- ZONA YO (abajo — normal) -->
+  <div id="zonaYo" style="flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;cursor:pointer;background:rgba(236,72,153,.03);position:relative;min-height:45%;" onclick="hablarYo()">
+    <div id="convYoTrad" style="font-size:13px;color:rgba(249,168,212,.6);text-align:center;margin-bottom:8px;font-style:italic;max-width:320px;"></div>
+    <div id="convYoTexto" style="font-size:14px;color:#f9a8d4;text-align:center;line-height:1.6;max-width:320px;font-weight:500;">Toca para hablar en español</div>
+    <div id="convYoIcon" style="font-size:52px;margin-top:8px;">🎙️</div>
+    <div id="convYoStatus" style="font-size:11px;font-weight:700;color:#ec4899;text-transform:uppercase;letter-spacing:1px;margin-top:8px;">👇 PULSA PARA HABLAR</div>
+  </div>
+
 </div>
 
 <!-- CONFIG -->
@@ -1149,6 +1207,119 @@ function cerrarEscucha(){
   document.getElementById('spYou').classList.remove('talking');
   document.getElementById('spOther').classList.remove('other-talking');
 }
+
+// ════════════════════════════════════════════
+// CONVERSACIÓN BILINGÜE — AUDÍFONOS COMPARTIDOS
+// ════════════════════════════════════════════
+let convActiva=false, grabandoConv=false;
+
+function toggleConversacion(){
+  const panel=document.getElementById('convPanel');
+  if(panel.style.display==='flex'){cerrarConversacion();}
+  else{
+    panel.style.display='flex';
+    panel.style.flexDirection='column';
+    unlockAudio();
+  }
+}
+
+function cerrarConversacion(){
+  convActiva=false;
+  document.getElementById('convPanel').style.display='none';
+}
+
+async function grabarYTraducir(destino){
+  if(grabandoConv)return;
+  grabandoConv=true;
+
+  const esYo = destino==='yo';
+  const iconEl = document.getElementById(esYo?'convYoIcon':'convOtroIcon');
+  const statusEl = document.getElementById(esYo?'convYoStatus':'convOtroStatus');
+  const textoEl = document.getElementById(esYo?'convYoTexto':'convOtroTexto');
+  const tradEl = document.getElementById(esYo?'convYoTrad':'convOtroTrad');
+  const tradDestEl = document.getElementById(esYo?'convOtroTexto':'convYoTexto');
+  const tradDestTradEl = document.getElementById(esYo?'convOtroTrad':'convYoTrad');
+
+  const langOrigen = esYo ? document.getElementById('convLangYo').value : document.getElementById('convLangOtro').value;
+  const langDestino = esYo ? document.getElementById('convLangOtro').value : document.getElementById('convLangYo').value;
+
+  iconEl.textContent='🔴';
+  statusEl.textContent='🎙️ GRABANDO...';
+  textoEl.textContent='Habla ahora...';
+  tradEl.textContent='';
+
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mr=new MediaRecorder(stream);
+    const chunks=[];
+    mr.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data);};
+
+    mr.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      iconEl.textContent='⏳';
+      statusEl.textContent='Procesando...';
+
+      const blob=new Blob(chunks,{type:'audio/webm'});
+      const fd=new FormData();
+      fd.append('file',blob,'audio.webm');
+      fd.append('model','whisper-1');
+      if(langOrigen!=='auto') fd.append('language',langOrigen);
+
+      try{
+        // 1. Transcribir
+        const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{
+          method:'POST',headers:{'Authorization':`Bearer ${CFG.openai}`},body:fd
+        });
+        const d=await r.json();
+        const original=d.text?.trim();
+        if(!original){textoEl.textContent='No se detectó voz';grabandoConv=false;return;}
+
+        textoEl.textContent=original;
+
+        // 2. Traducir
+        const langNombre={es:'español',en:'inglés',fr:'francés',de:'alemán',it:'italiano',pt:'portugués',zh:'chino',ja:'japonés',ar:'árabe',ru:'ruso',auto:'español'};
+        const destNombre = langNombre[langDestino]||'español';
+
+        const trad=await gpt([
+          {role:'system',content:`Eres intérprete profesional. Traduce el siguiente texto al ${destNombre}. Responde SOLO con la traducción, natural y fluida, sin explicaciones.`},
+          {role:'user',content:original}
+        ],200);
+
+        tradEl.textContent='→ '+trad;
+        tradDestEl.textContent=trad;
+        tradDestTradEl.textContent='← '+original;
+
+        // 3. Hablar la traducción para el que escucha
+        await hablar(trad);
+
+        iconEl.textContent='✅';
+        statusEl.textContent=esYo?'👇 PULSA PARA HABLAR':'👆 PULSA PARA HABLAR';
+
+      }catch(e){
+        textoEl.textContent='Error: '+e.message;
+        iconEl.textContent='❌';
+      }
+      grabandoConv=false;
+    };
+
+    mr.start();
+    // Para automáticamente a los 10 segundos
+    setTimeout(()=>{if(mr.state==='recording')mr.stop();},10000);
+
+    // Mostrar botón para parar manualmente
+    statusEl.textContent='🔴 Grabando — toca para parar';
+    const stopFn=()=>{if(mr.state==='recording')mr.stop(); iconEl.removeEventListener('click',stopFn);};
+    iconEl.addEventListener('click',stopFn);
+
+  }catch(e){
+    iconEl.textContent='❌';
+    statusEl.textContent='Sin micrófono';
+    grabandoConv=false;
+  }
+}
+
+function hablarYo(){ grabarYTraducir('yo'); }
+function hablarOtro(){ grabarYTraducir('otro'); }
 
 // ════════════════════════════════════════════
 // MODO REUNIÓN
