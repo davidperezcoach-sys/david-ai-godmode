@@ -424,8 +424,8 @@ textarea::placeholder{color:var(--td);}
 // CONFIGURACIÓN — CLAVES PRE-CARGADAS
 // ════════════════════════════════════════════
 const CFG = {
-  openai:  'TU_OPENAI_KEY_AQUI',
-  eleven:  'TU_ELEVENLABS_KEY_AQUI',
+  openai:  localStorage.getItem('d_oai') || '',
+  eleven:  localStorage.getItem('d_eli') || '',
   voiceId: 'FsnoTnJuciO7Wzi8XmLr',
   nombre:  'David',
   contexto:`Soy David Pérez, fundador de:
