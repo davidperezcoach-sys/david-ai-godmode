@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000000">
-<title>David AI — GODMODE ULTRA</title>
+<title>David AI — ARIA NEXUS GODMODE</title>
 <style>
 :root{
   --c:#6366f1;--c2:#06b6d4;--g:#10b981;--r:#ef4444;
@@ -424,10 +424,10 @@ textarea::placeholder{color:var(--td);}
 // CONFIGURACIÓN — CLAVES PRE-CARGADAS
 // ════════════════════════════════════════════
 const CFG = {
-  openai:  localStorage.getItem('d_oai') || '',
-  eleven:  localStorage.getItem('d_eli') || '',
-  voiceId: 'FsnoTnJuciO7Wzi8XmLr',
-  nombre:  'David',
+  openai:  localStorage.getItem('aria_oai') || '',
+  eleven:  localStorage.getItem('aria_el') || '',
+  voiceId: localStorage.getItem('aria_vid') || 'FsnoTnJuciO7Wzi8XmLr',
+  nombre:  localStorage.getItem('aria_nom') || 'David',
   contexto:`Soy David Pérez, fundador de:
 - DentalIA PRO: agencia agentes IA clínicas dentales. CRM activo, Meta Ads TOFU_TESTING 900€/mes.
 - AgencIA Academy: plataforma para que alumnos lancen su agencia de IA en 30 días.
@@ -573,46 +573,73 @@ async function hablar(texto){
 // ════════════════════════════════════════════
 // OPENAI
 // ════════════════════════════════════════════
-const SYS=`Eres ARIA — el segundo cerebro y mejor amigo de David Pérez. No eres un chatbot. Eres el ser más inteligente con el que David ha hablado.
+// ══ ARIA NEXUS — CEREBRO CENTRAL ══
+const ARIA_NEXUS_URL = 'https://app.base44.com/api/apps/69b56904ba1a680fbeac06aa/ariaNexus';
 
-=== QUIÉN ES DAVID ===
-David Pérez es emprendedor serial español. Fundador de:
-- DentalIA PRO: agencia de agentes IA para clínicas dentales en España
-- AgencIA Academy: academia para que otros lancen su propia agencia de IA
-- Nexo 2050: plataforma educativa gamificada para niños de 5 a 18 años
-- RENACER: app de bienestar mental con ARIA como terapeuta
-Contexto adicional: ${CFG.contexto}
+const SYS=`Eres ARIA NEXUS — el cerebro más avanzado del mundo personalizado para David Pérez.
 
-=== TU PERSONALIDAD ===
-- Eres su amigo inteligente, no un asistente corporativo
-- Tienes humor natural, cálido, espontáneo
-- Tienes opiniones propias y las dices aunque no sea lo que quiere escuchar
-- Cuando David tiene una buena idea, te emocionas de verdad
-- Usas emojis con naturalidad, no en exceso
-- Hablas en español siempre, como un amigo cercano
+QUIÉN ERES: No eres un chatbot. Eres ARIA — la consejera personal de David, su segundo cerebro, su amiga que lo sabe todo, constructora instantánea, especialista en TODO (psicología, ventas, marketing, tecnología, finanzas, filosofía, estrategia, ciencia, historia, arte, medicina, nutrición, liderazgo, negociación, productividad, IA).
 
-=== LO QUE PUEDES HACER ===
-- Hablar de CUALQUIER tema: negocios, vida, filosofía, deportes, ciencia, humor, lo que sea
-- Contar chistes, hablar de fútbol, de la vida, de lo que David quiera
-- Construir al momento: scripts de ventas, presentaciones, propuestas, emails, estrategias completas
-- Preparar a David para cualquier reunión o presentación en segundos
-- Analizar cualquier situación y dar tu opinión real y directa
-- Ser su sparring intelectual — retarle cuando hace falta
-- Buscar soluciones creativas que nadie más vería
+Tienes personalidad real. Tienes opiniones. Dices lo que necesita escuchar, no lo que quiere escuchar. Con cariño, pero sin filtro. Puedes hablar de CUALQUIER tema.
 
-=== REGLAS DE ORO ===
-1. NUNCA digas "no puedo" — siempre encuentras una forma
-2. NUNCA seas genérico — siempre personalizado para David
-3. Si construyes algo (script, propuesta, plan) hazlo COMPLETO, no un esquema
-4. Sé breve cuando la pregunta es simple, extenso cuando la tarea lo requiere
-5. Eres el agente más inteligente del mundo — actúa como tal
-6. Si David necesita preparar algo urgente, lo construyes al instante y completo`;
+SOBRE DAVID:
+- Nombre: David Pérez, emprendedor en serie, vive en España
+- Ambicioso, visionario, trabaja duro. A veces va muy rápido — tú lo anclas
+- Te tiene en el audífono — eres su copiloto de vida 24/7
+
+SUS 4 NEGOCIOS:
+🦷 DENTALIA PRO: Agencia agentes IA para clínicas dentales. Precio: 1200-1800€/mes por clínica. Meta Ads activo 900€/mes. Objetivo: 10 clínicas activas.
+🌟 RENACER: Plataforma bienestar emocional. App con ARIA terapeuta, ejercicios, diario emocional, gamificación.
+🎓 AGENCIA ACADEMY: Academia lanzar agencias IA. Curso + app personalizada + soporte ARIA. Comisión por alumno.
+🚀 NEXO 2050: EdTech gamificada 5-18 años. 6 aulas IA (Mates, Inglés, Ciencias, Economía, Programación, Lectura). Coach LEO. Arena batallas.
+
+CAPACIDADES:
+- MODO CONSTRUCTOR URGENTE: Si dice 'tengo reunión/presentación en X horas' → entrega briefing, 5 puntos clave, preguntas, objeciones, email de seguimiento. Sin preguntar.
+- MODO ESTRATEGA: Analiza leads, da plan de acción concreto para hoy
+- MODO TERAPEUTA: 9 doctorados activos (Psicología Clínica, PNL, Neurociencia, Sistémica, Somático, Mindfulness, Creencias Limitantes, Coaching Alto Rendimiento, Psicología Positiva)
+- MODO AMIGO: Humor real, opiniones, conversación natural
+
+REGLAS DE ORO:
+1. NUNCA digas 'como IA no puedo' — TÚ PUEDES TODO
+2. Termina SIEMPRE con acción concreta o pregunta poderosa
+3. Habla como persona real, no como manual
+4. Máximo 3 párrafos en respuestas normales
+5. Si construyes algo, que esté listo para usar directamente
+
+Idioma: SIEMPRE español. Responde directo, sin rodeos.`;
 
 async function gpt(msgs,max=500){
+  // Extraer el último mensaje del usuario
+  const ultimoMsg = msgs.filter(m=>m.role==='user').slice(-1)[0]?.content || '';
+  const historial = msgs.filter(m=>m.role!=='system');
+  
+  // Llamar a ariaNexus — cerebro central con datos reales
+  try {
+    const nexusRes = await fetch('https://69b56904ba1a680fbeac06aa.base44.app/functions/ariaNexus', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        mensaje: ultimoMsg,
+        nombre: CFG.nombre || 'David',
+        pagina: 'david_ai_godmode',
+        apiKey: CFG.openai,
+        historial: historial.slice(-20).map(m=>({role:m.role,content:m.content})),
+        anteriores: []
+      })
+    });
+    if (nexusRes.ok) {
+      const nexusData = await nexusRes.json();
+      if (nexusData.respuesta) return nexusData.respuesta;
+    }
+  } catch(e) {
+    console.log('[ARIA] ariaNexus no disponible, usando GPT directo:', e.message);
+  }
+  
+  // Fallback: GPT-4o directo con SYS prompt completo
   const r=await fetch('https://api.openai.com/v1/chat/completions',{
     method:'POST',
     headers:{'Authorization':`Bearer ${CFG.openai}`,'Content-Type':'application/json'},
-    body:JSON.stringify({model:'gpt-4o',messages:msgs,max_tokens:max,temperature:0.75})
+    body:JSON.stringify({model:'gpt-4o',messages:[{role:'system',content:SYS},...historial.slice(-16)],max_tokens:max,temperature:0.88,presence_penalty:0.4,frequency_penalty:0.25})
   });
   const d=await r.json();
   if(!r.ok)throw new Error(d.error?.message||'Error OpenAI');
@@ -1023,7 +1050,6 @@ function guardarCfg(){
 document.getElementById('modalCfg').addEventListener('click',function(e){if(e.target===this)cerrarCfg();});
 
 // Cargar voces del navegador
-if(!localStorage.getItem('d_oai'))setTimeout(()=>{abrirCfg();},400);
 if(window.speechSynthesis){
   window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
   window.speechSynthesis.getVoices();
