@@ -655,6 +655,11 @@ Próxima reunión importante: inversora interesada en entrar al negocio.`
 // ════════════════════════════════════════════
 let hist=[], vozOn=true;
 let grabando=false, mr=null, chunks=[], ri=null, rs=0;
+// ── Sesión ID única por apertura de app ──
+const SESION_ID = 'david_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+let contadorMensajes = 0;
+let historialCompleto = [];
+
 let escuchaOn=false, reconEscucha=null, bufferEscucha='';
 let meetMicOn=false, meetMr=null, meetChunks=[];
 let camStream=null;
@@ -826,6 +831,9 @@ async function gpt(msgs,max=500){
   const historial = msgs.filter(m=>m.role!=='system');
 
   // ── DAVID BRAIN — YO (el Superagent real) dentro de la app ──
+  contadorMensajes++;
+  const guardarAhora = contadorMensajes % 10 === 0; // Guardar cada 10 mensajes
+  
   try {
     const brainRes = await fetch('https://69b56904ba1a680fbeac06aa.base44.app/functions/davidBrain', {
       method: 'POST',
@@ -834,12 +842,19 @@ async function gpt(msgs,max=500){
         mensaje: ultimoMsg,
         nombre: CFG.nombre || 'David',
         apiKey: CFG.openai,
-        historial: historial.slice(-20).map(m=>({role:m.role,content:typeof m.content==='string'?m.content:JSON.stringify(m.content)}))
+        historial: historialCompleto.slice(-20),
+        sesion_id: SESION_ID,
+        guardar_sesion: guardarAhora
       })
     });
     if (brainRes.ok) {
       const brainData = await brainRes.json();
-      if (brainData.respuesta) return brainData.respuesta;
+      if (brainData.respuesta) {
+        // Guardar en historial local
+        historialCompleto.push({role:'user', content:ultimoMsg});
+        historialCompleto.push({role:'assistant', content:brainData.respuesta});
+        return brainData.respuesta;
+      }
     }
   } catch(e) {
     console.log('[BRAIN] davidBrain no disponible, fallback GPT:', e.message);
@@ -1558,6 +1573,24 @@ if(window.speechSynthesis){
   window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
   window.speechSynthesis.getVoices();
 }
+</script>
+<script>
+// Guardar sesión automáticamente al cerrar la app
+window.addEventListener('beforeunload', async () => {
+  if(historialCompleto.length > 2 && CFG.openai) {
+    try {
+      navigator.sendBeacon('https://69b56904ba1a680fbeac06aa.base44.app/functions/davidBrain', 
+        JSON.stringify({
+          mensaje: '_guardar_sesion_',
+          apiKey: CFG.openai,
+          historial: historialCompleto.slice(-30),
+          sesion_id: SESION_ID,
+          guardar_sesion: true
+        })
+      );
+    } catch(e) {}
+  }
+});
 </script>
 </body>
 </html>
