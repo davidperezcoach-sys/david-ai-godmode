@@ -976,11 +976,7 @@ function toggleEscucha(){
 
 async function abrirEscucha(){
   // Verificar que hay OpenAI Key configurada
-  if(!CFG.openai || CFG.openai.length < 20){
-    toast('⚙️ Primero configura tu OpenAI Key en Ajustes (icono engranaje)', true);
-    abrirConfig();
-    return;
-  }
+
   unlockAudio();
   document.getElementById('listenPanel').classList.add('visible');
   document.getElementById('whisperCard').classList.remove('visible');
@@ -1105,11 +1101,6 @@ async function iniciarDetectorVolumen(){
 }
 
 async function procesarComando(contexto,tipo){
-  // Verificar key
-  if(!CFG.openai || CFG.openai.length < 20){
-    toast('Configura tu OpenAI Key en Ajustes primero', true);
-    return;
-  }
   document.getElementById('ringStatus').textContent='💭 PROCESANDO...';
   document.getElementById('ringIcon').textContent='⏳';
 
