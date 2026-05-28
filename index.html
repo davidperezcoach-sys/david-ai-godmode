@@ -688,13 +688,8 @@ document.addEventListener('click',unlockAudio,{once:true});
 // Verificar configuracion al cargar
 setTimeout(()=>{
   const ind=document.getElementById('statusIndicator');
-  if(!CFG.openai||CFG.openai.length<20){
-    toast('Configura tu OpenAI Key en el icono de engranaje para activarme');
-    if(ind){ind.textContent='SIN CONFIGURAR';ind.style.color='#f59e0b';}
-  } else {
-    if(ind){ind.textContent='SUPERAGENT ACTIVO';}
-  }
-},2000);
+  if(ind){ind.textContent='SUPERAGENT ACTIVO';ind.style.color='#10b981';}
+},500);
 
 function activarVoz(){
   unlockAudio();
@@ -859,31 +854,24 @@ async function gpt(msgs,max=500){
   historialCompleto.push({role:'user', content:ultimoMsg});
   contadorMensajes++;
   
-  if(!CFG.openai||CFG.openai.length<20){
-    return 'Abre Ajustes (icono engranaje arriba a la derecha) y pon tu OpenAI Key para activarme.';
-  }
-  
   try {
-    const r=await fetch('https://api.openai.com/v1/chat/completions',{
+    const r=await fetch('https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy',{
       method:'POST',
-      headers:{'Authorization':`Bearer ${CFG.openai}`,'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'gpt-4o',
-        messages:msgs,
-        max_tokens:max,
-        temperature:0.87,
-        presence_penalty:0.4,
-        frequency_penalty:0.25
+        mensaje: ultimoMsg,
+        historial: historialCompleto.slice(-16),
+        modo: 'chat'
       })
     });
     const d=await r.json();
-    if(!r.ok)throw new Error(d.error?.message||'Error OpenAI');
-    const respuesta=d.choices[0].message.content;
+    if(!r.ok) throw new Error(d.error||'Error servidor');
+    const respuesta=d.respuesta;
     historialCompleto.push({role:'assistant', content:respuesta});
     return respuesta;
   } catch(e) {
     console.error('[GPT Error]', e.message);
-    return 'Error de conexion: '+e.message+'. Revisa tu OpenAI Key en Ajustes.';
+    return 'Error de conexion. Intentalo de nuevo.';
   }
 }
 
