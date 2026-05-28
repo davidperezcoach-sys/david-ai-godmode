@@ -382,7 +382,7 @@ textarea::placeholder{color:var(--td);}
       <div class="wlc-av" style="font-size:42px;">🧠</div>
       <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:4px 12px;margin-bottom:8px;">
         <div style="width:7px;height:7px;border-radius:50%;background:#10b981;animation:pulse 1.5s infinite;"></div>
-        <span style="font-size:11px;color:#10b981;font-weight:700;">CONECTADO AL SUPERAGENT</span>
+        <span style="font-size:11px;color:#10b981;font-weight:700;" id="statusIndicator">CONECTADO AL SUPERAGENT</span>
       </div>
       <h2>GODMODE <span>ULTRA</span></h2>
       <p>Soy tu Superagent. En reuniones, auriculares, gafas Meta o cámara — siempre contigo. Escucho todo. Solo habla.</p>
@@ -685,6 +685,17 @@ function unlockAudio(){
 document.addEventListener('touchstart',unlockAudio,{once:true});
 document.addEventListener('click',unlockAudio,{once:true});
 
+// Verificar configuracion al cargar
+setTimeout(()=>{
+  const ind=document.getElementById('statusIndicator');
+  if(!CFG.openai||CFG.openai.length<20){
+    toast('Configura tu OpenAI Key en el icono de engranaje para activarme');
+    if(ind){ind.textContent='SIN CONFIGURAR';ind.style.color='#f59e0b';}
+  } else {
+    if(ind){ind.textContent='SUPERAGENT ACTIVO';}
+  }
+},2000);
+
 function activarVoz(){
   unlockAudio();
   hablarNavegador('Hola David, voz activada. Ya puedo susurrarte en cualquier momento.');
@@ -886,7 +897,11 @@ async function gpt(msgs,max=500){
     });
     if(retry.ok){const rd=await retry.json();if(rd.respuesta){historialCompleto.push({role:'user',content:ultimoMsg});historialCompleto.push({role:'assistant',content:rd.respuesta});return rd.respuesta;}}
   }catch(e2){}
-  return 'David, tuve un problema de conexion. Intenta de nuevo.';
+  // Mostrar mensaje claro
+  if(!CFG.openai || CFG.openai.length < 20){
+    return 'David, necesitas configurar tu OpenAI Key. Ve a Ajustes, el icono del engranaje arriba a la derecha.';
+  }
+  return 'David, hay un problema de conexion con el servidor. Espera 5 segundos e intentalo de nuevo.';
 }
 
 async function gptVision(b64,prompt){
@@ -988,6 +1003,12 @@ function toggleEscucha(){
 }
 
 async function abrirEscucha(){
+  // Verificar que hay OpenAI Key configurada
+  if(!CFG.openai || CFG.openai.length < 20){
+    toast('⚙️ Primero configura tu OpenAI Key en Ajustes (icono engranaje)', true);
+    abrirConfig();
+    return;
+  }
   unlockAudio();
   document.getElementById('listenPanel').classList.add('visible');
   document.getElementById('whisperCard').classList.remove('visible');
@@ -1112,6 +1133,11 @@ async function iniciarDetectorVolumen(){
 }
 
 async function procesarComando(contexto,tipo){
+  // Verificar key
+  if(!CFG.openai || CFG.openai.length < 20){
+    toast('Configura tu OpenAI Key en Ajustes primero', true);
+    return;
+  }
   document.getElementById('ringStatus').textContent='💭 PROCESANDO...';
   document.getElementById('ringIcon').textContent='⏳';
 
