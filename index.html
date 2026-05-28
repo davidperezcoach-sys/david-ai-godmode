@@ -856,53 +856,30 @@ Idioma: SIEMPRE español. Responde directo, sin rodeos.`;
 
 async function gpt(msgs,max=500){
   const ultimoMsg = msgs.filter(m=>m.role==='user').slice(-1)[0]?.content || '';
-  const historial = msgs.filter(m=>m.role!=='system');
-
-  // ── DAVID BRAIN — YO (el Superagent real) dentro de la app ──
+  historialCompleto.push({role:'user', content:ultimoMsg});
   contadorMensajes++;
-  const guardarAhora = contadorMensajes % 10 === 0; // Guardar cada 10 mensajes
   
   try {
-    const brainRes = await fetch('https://69b56904ba1a680fbeac06aa.base44.app/functions/davidBrain', {
+    const r = await fetch('https://69b56904ba1a680fbeac06aa.base44.app/functions/davidProxy', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         mensaje: ultimoMsg,
-        nombre: CFG.nombre || 'David',
-        apiKey: CFG.openai,
-        historial: historialCompleto.slice(-20),
-        sesion_id: SESION_ID,
-        guardar_sesion: guardarAhora
+        historial: historialCompleto.slice(-16),
+        modo: 'chat'
       })
     });
-    if (brainRes.ok) {
-      const brainData = await brainRes.json();
-      if (brainData.respuesta) {
-        // Guardar en historial local
-        historialCompleto.push({role:'user', content:ultimoMsg});
-        historialCompleto.push({role:'assistant', content:brainData.respuesta});
-        return brainData.respuesta;
-      }
-    }
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || 'Error servidor');
+    const respuesta = d.respuesta;
+    historialCompleto.push({role:'assistant', content:respuesta});
+    return respuesta;
   } catch(e) {
-    console.log('[BRAIN] davidBrain no disponible, fallback GPT:', e.message);
+    console.error('[GPT Error]', e.message);
+    return 'David, error de conexion. Comprueba tu internet e intentalo de nuevo.';
   }
-
-  // Fallback: reintentar davidBrain
-  try {
-    await new Promise(r=>setTimeout(r,1500));
-    const retry=await fetch('https://69b56904ba1a680fbeac06aa.base44.app/functions/davidBrain',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({mensaje:ultimoMsg,apiKey:CFG.openai,historial:historialCompleto.slice(-10),sesion_id:SESION_ID,guardar_sesion:false})
-    });
-    if(retry.ok){const rd=await retry.json();if(rd.respuesta){historialCompleto.push({role:'user',content:ultimoMsg});historialCompleto.push({role:'assistant',content:rd.respuesta});return rd.respuesta;}}
-  }catch(e2){}
-  // Mostrar mensaje claro
-  if(!CFG.openai || CFG.openai.length < 20){
-    return 'David, necesitas configurar tu OpenAI Key. Ve a Ajustes, el icono del engranaje arriba a la derecha.';
-  }
-  return 'David, hay un problema de conexion con el servidor. Espera 5 segundos e intentalo de nuevo.';
 }
+
 
 async function gptVision(b64,prompt){
   const r=await fetch('https://api.openai.com/v1/chat/completions',{
