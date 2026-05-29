@@ -2013,5 +2013,159 @@ async function ariaCreateDemo() {
 
 console.log('🧠 ARIA DIOS activada — Memoria infinita, Gmail, Calendar, CRM en tiempo real');
 </script>
+
+<script>
+// ============================================================
+// ARIA DIOS — UBICACIÓN + MEMORIA REAL EN BASE DE DATOS
+// ============================================================
+
+const ARIA_PROXY = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy';
+
+// ── UBICACIÓN EN TIEMPO REAL ──
+let ariaLocation = null;
+
+function ariaGetLocation() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude: lat, longitude: lon } = pos.coords;
+      // Reverse geocoding con API abierta
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+        .then(r => r.json())
+        .then(data => {
+          const city = data.address?.city || data.address?.town || data.address?.village || 'España';
+          const country = data.address?.country || 'España';
+          ariaLocation = { lat, lon, city, country, raw: `${city}, ${country}` };
+          console.log('📍 ARIA sabe dónde estás:', ariaLocation.raw);
+          // Actualizar barra de stats con ubicación
+          const upd = document.getElementById('statUpdate');
+          if (upd) upd.textContent = `📍 ${city} · act. ${new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}`;
+        })
+        .catch(() => {
+          ariaLocation = { lat, lon, city: 'España', country: 'España', raw: `${lat.toFixed(2)}, ${lon.toFixed(2)}` };
+        });
+    },
+    err => { console.log('Ubicación no disponible:', err.message); },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// Pedir ubicación al arrancar
+ariaGetLocation();
+// Actualizar cada 10 minutos
+setInterval(ariaGetLocation, 600000);
+
+// ── INYECTAR UBICACIÓN EN CADA MENSAJE ──
+function ariaAddLocationContext(mensaje) {
+  if (!ariaLocation) return mensaje;
+  return `${mensaje}
+
+[MI UBICACIÓN AHORA: ${ariaLocation.raw} | Coords: ${ariaLocation.lat?.toFixed(4)}, ${ariaLocation.lon?.toFixed(4)}]`;
+}
+
+// ── MEMORIA REAL EN BASE DE DATOS ──
+// Guarda cada sesión en DavidBrainMemoria (entidad de Flowie)
+const BRAIN_PROXY = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy';
+
+let ariaSesionActual = {
+  inicio: new Date().toISOString(),
+  mensajes: [],
+  temas: [],
+  decisiones: []
+};
+
+function ariaGuardarMensajeSesion(role, content) {
+  ariaSesionActual.mensajes.push({ role, content: content.slice(0, 300), ts: new Date().toISOString() });
+}
+
+// Guardar sesión en BD al cerrar/cada 5 mensajes
+async function ariaGuardarSesionBD() {
+  if (ariaSesionActual.mensajes.length < 2) return;
+  try {
+    const resumen = ariaSesionActual.mensajes
+      .map(m => `${m.role === 'user' ? 'David' : 'ARIA'}: ${m.content.slice(0,100)}`)
+      .join(' | ');
+    
+    await fetch(BRAIN_PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'save_brain_memory',
+        sesion: {
+          fecha: new Date().toISOString().slice(0,10),
+          resumen: resumen.slice(0, 500),
+          mensajes: ariaSesionActual.mensajes.slice(-10),
+          ubicacion: ariaLocation?.raw || 'desconocida',
+          total_mensajes: ariaSesionActual.mensajes.length
+        }
+      })
+    });
+  } catch(e) { /* silencioso */ }
+}
+
+// Guardar en BD cada 5 mensajes nuevos
+let _msgCountBD = 0;
+function ariaCheckGuardarBD() {
+  _msgCountBD++;
+  if (_msgCountBD >= 5) {
+    _msgCountBD = 0;
+    ariaGuardarSesionBD();
+  }
+}
+
+// Guardar al cerrar la pestaña
+window.addEventListener('beforeunload', () => ariaGuardarSesionBD());
+
+// ── INTERCEPTAR ENVÍO PARA AÑADIR UBICACIÓN Y MEMORIA ──
+// Usamos MutationObserver para detectar mensajes nuevos en el chat
+const _ariaObserver = new MutationObserver(mutations => {
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if (node.nodeType === 1) {
+        const text = node.textContent?.trim();
+        if (text && text.length > 2) {
+          // Detectar si es mensaje de usuario o de ARIA
+          const isUser = node.classList?.contains('user') || node.closest?.('.user-msg');
+          const isAria = node.classList?.contains('aria') || node.closest?.('.aria-msg') || node.closest?.('.assistant');
+          if (isUser || isAria) {
+            ariaGuardarMensajeSesion(isUser ? 'user' : 'aria', text);
+            ariaCheckGuardarBD();
+          }
+        }
+      }
+    });
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Observar el contenedor de chat
+  const chatContainer = document.querySelector('#chatMessages, .chat-messages, #messages, .messages');
+  if (chatContainer) {
+    _ariaObserver.observe(chatContainer, { childList: true, subtree: true });
+  }
+  
+  // Interceptar formulario de envío para inyectar ubicación
+  const forms = document.querySelectorAll('form');
+  forms.forEach(form => {
+    form.addEventListener('submit', e => {
+      const input = form.querySelector('input[type="text"], textarea');
+      if (input && ariaLocation) {
+        // La ubicación se manda al proxy — no se muestra al usuario
+        window._ariaLocationCtx = ariaLocation.raw;
+      }
+    }, true);
+  });
+  
+  // También interceptar botón de micrófono para añadir ubicación al audio
+  const micBtn = document.querySelector('#micBtn, .mic-btn, button[id*="mic"]');
+  if (micBtn) {
+    micBtn.addEventListener('click', () => {
+      window._ariaLocationCtx = ariaLocation?.raw;
+    }, true);
+  }
+});
+
+console.log('📍 ARIA UBICACIÓN + 🧠 MEMORIA BD — Activadas');
+</script>
 </body>
 </html>
