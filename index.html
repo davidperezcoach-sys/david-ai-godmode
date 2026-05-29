@@ -393,6 +393,7 @@ textarea::placeholder{color:var(--td);}
     <div class="modb brief" onclick="quickMsg('Dame un briefing ejecutivo de todos mis proyectos activos ahora mismo')">📋 Briefing</div>
     <div class="modb" style="border-color:rgba(245,158,11,.35);color:#fcd34d;background:rgba(245,158,11,.06);" id="btnInterpreter" onclick="toggleInterprete()">🌐 Intérprete</div>
     <div class="modb" style="border-color:rgba(236,72,153,.35);color:#f9a8d4;background:rgba(236,72,153,.06);" id="btnConversacion" onclick="toggleConversacion()">🗣️ Conversación</div>
+    <div class="modb" style="border-color:rgba(0,255,136,.4);color:#00ff88;background:rgba(0,255,136,.08);font-weight:700;" onclick="abrirConstructor()">🏗️ Construir</div>
   </div>
 
   <div class="msgs" id="msgs">
@@ -425,6 +426,148 @@ textarea::placeholder{color:var(--td);}
     </div>
   </div>
 </div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     🏗️ PANEL CONSTRUCTOR — ARIA NEXUS
+     ARIA pide → GPT-4o construye → URL pública en Base44
+═══════════════════════════════════════════════════════ -->
+<div id="constructorPanel" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(2,4,8,.98);flex-direction:column;align-items:center;overflow-y:auto;padding:20px 16px;">
+
+  <!-- Header -->
+  <div style="width:100%;max-width:560px;margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:11px;color:#00ff88;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;">● ARIA BUILDER</div>
+        <div style="font-size:22px;font-weight:800;color:#fff;">Construir con IA</div>
+        <div style="font-size:13px;color:#555;margin-top:2px;">Describe lo que necesitas — ARIA lo construye y te da el enlace</div>
+      </div>
+      <button onclick="cerrarConstructor()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+  </div>
+
+  <!-- Tipos de construcción -->
+  <div style="width:100%;max-width:560px;margin-bottom:20px;">
+    <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">¿Qué quieres construir?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="tipoGrid">
+      <div class="tipo-card" data-tipo="presentacion" onclick="selTipo('presentacion')" style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.25);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;">
+        <div style="font-size:24px;margin-bottom:6px;">🎨</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;">Presentación</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">5 slides premium</div>
+      </div>
+      <div class="tipo-card" data-tipo="propuesta" onclick="selTipo('propuesta')" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;">
+        <div style="font-size:24px;margin-bottom:6px;">📄</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;">Propuesta</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">Con ROI personalizado</div>
+      </div>
+      <div class="tipo-card" data-tipo="landing" onclick="selTipo('landing')" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;">
+        <div style="font-size:24px;margin-bottom:6px;">🌐</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;">Landing Page</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">Alta conversión</div>
+      </div>
+      <div class="tipo-card" data-tipo="guion" onclick="selTipo('guion')" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;">
+        <div style="font-size:24px;margin-bottom:6px;">🎯</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;">Guión de Venta</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">Script completo</div>
+      </div>
+      <div class="tipo-card" data-tipo="informe" onclick="selTipo('informe')" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;">
+        <div style="font-size:24px;margin-bottom:6px;">📊</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;">Informe</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">Ejecutivo con datos</div>
+      </div>
+      <div class="tipo-card" data-tipo="email" onclick="selTipo('email')" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;">
+        <div style="font-size:24px;margin-bottom:6px;">📧</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;">Email</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">Plantilla profesional</div>
+      </div>
+      <div class="tipo-card" data-tipo="contrato" onclick="selTipo('contrato')" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;">
+        <div style="font-size:24px;margin-bottom:6px;">📋</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;">Contrato</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">Legal y profesional</div>
+      </div>
+      <div class="tipo-card" data-tipo="web" onclick="selTipo('web')" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;cursor:pointer;transition:.2s;">
+        <div style="font-size:24px;margin-bottom:6px;">⚡</div>
+        <div style="font-size:14px;font-weight:700;color:#fff;">Cualquier cosa</div>
+        <div style="font-size:12px;color:#666;margin-top:2px;">App, herramienta, web...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Descripción -->
+  <div style="width:100%;max-width:560px;margin-bottom:16px;">
+    <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Describe exactamente lo que necesitas</div>
+    <textarea id="buildDesc" placeholder="Ej: propuesta para Clínica Dental López en Madrid, presupuesto €1.497/mes, reunión el lunes..." 
+      style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;color:#fff;font-size:14px;line-height:1.6;resize:none;min-height:100px;font-family:inherit;outline:none;"
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+  </div>
+
+  <!-- Datos adicionales (opcional) -->
+  <div style="width:100%;max-width:560px;margin-bottom:20px;">
+    <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Datos adicionales (opcional)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <input id="buildCliente" type="text" placeholder="Cliente / Empresa" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;font-family:inherit;">
+      <input id="buildCiudad" type="text" placeholder="Ciudad" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;font-family:inherit;">
+      <input id="buildPrecio" type="text" placeholder="Precio (ej: €1.497/mes)" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;font-family:inherit;">
+      <input id="buildExtra" type="text" placeholder="Dato extra relevante" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;color:#fff;font-size:13px;outline:none;font-family:inherit;">
+    </div>
+  </div>
+
+  <!-- Botón construir -->
+  <div style="width:100%;max-width:560px;margin-bottom:24px;">
+    <button id="btnConstruir" onclick="ejecutarConstruccion()" 
+      style="width:100%;background:linear-gradient(135deg,#00ff88,#00cc66);color:#000;border:none;border-radius:12px;padding:18px;font-size:17px;font-weight:800;cursor:pointer;letter-spacing:.5px;">
+      🏗️ CONSTRUIR AHORA
+    </button>
+  </div>
+
+  <!-- Estado / Loading -->
+  <div id="buildStatus" style="width:100%;max-width:560px;display:none;">
+    <div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);border-radius:12px;padding:20px;text-align:center;">
+      <div id="buildStatusIcon" style="font-size:32px;margin-bottom:10px;">⚡</div>
+      <div id="buildStatusMsg" style="color:#00ff88;font-weight:700;font-size:15px;">ARIA está construyendo...</div>
+      <div id="buildStatusSub" style="color:#555;font-size:12px;margin-top:6px;">GPT-4o generando código profesional</div>
+    </div>
+  </div>
+
+  <!-- Resultado -->
+  <div id="buildResult" style="width:100%;max-width:560px;display:none;margin-top:16px;">
+    <div style="background:rgba(0,255,136,.06);border:2px solid rgba(0,255,136,.4);border-radius:16px;padding:24px;">
+      <div style="font-size:28px;margin-bottom:10px;text-align:center;">✅</div>
+      <div style="font-size:16px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px;">¡Listo! Tu archivo está online</div>
+      <div id="buildResultTipo" style="font-size:12px;color:#555;text-align:center;margin-bottom:20px;"></div>
+      
+      <!-- URL -->
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;margin-bottom:16px;word-break:break-all;">
+        <div style="font-size:10px;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px;">🔗 Enlace público</div>
+        <div id="buildUrl" style="font-size:12px;color:#00ff88;"></div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button id="btnAbrir" onclick="abrirResultado()" style="background:linear-gradient(135deg,#00ff88,#00cc66);color:#000;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;">
+          👁️ Abrir
+        </button>
+        <button onclick="copiarUrl()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:10px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;">
+          📋 Copiar URL
+        </button>
+        <button onclick="mandarPorEmail()" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:#00ff88;border-radius:10px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;">
+          📧 Mandar por Email
+        </button>
+        <button onclick="construirOtro()" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#888;border-radius:10px;padding:14px;font-size:14px;cursor:pointer;">
+          🔄 Construir otro
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial de builds -->
+  <div id="buildHistorial" style="width:100%;max-width:560px;margin-top:24px;display:none;">
+    <div style="font-size:11px;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;">Construidos anteriormente</div>
+    <div id="buildList" style="display:flex;flex-direction:column;gap:8px;"></div>
+  </div>
+
+</div>
+
 
 <!-- INTÉRPRETE UNIVERSAL -->
 <div id="interpreterPanel" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(2,4,8,.98);flex-direction:column;align-items:center;padding:16px;overflow-y:auto;">
@@ -2167,5 +2310,211 @@ document.addEventListener('DOMContentLoaded', () => {
 
 console.log('📍 ARIA UBICACIÓN + 🧠 MEMORIA BD — Activadas');
 </script>
+
+<script>
+// ============================================================
+// ARIA BUILDER — Panel Constructor
+// ============================================================
+
+const ARIA_BUILDER_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaBuilder';
+const SUPERAGENT_URL   = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy';
+
+let buildTipoActual = 'presentacion';
+let buildUrlActual = '';
+let buildHistorial = JSON.parse(localStorage.getItem('aria_builds') || '[]');
+
+// ── Abrir/Cerrar panel ──
+function abrirConstructor() {
+  const panel = document.getElementById('constructorPanel');
+  panel.style.display = 'flex';
+  renderHistorial();
+}
+function cerrarConstructor() {
+  document.getElementById('constructorPanel').style.display = 'none';
+}
+
+// ── Seleccionar tipo ──
+function selTipo(tipo) {
+  buildTipoActual = tipo;
+  document.querySelectorAll('.tipo-card').forEach(c => {
+    const esSel = c.dataset.tipo === tipo;
+    c.style.background = esSel ? 'rgba(0,255,136,.12)' : 'rgba(255,255,255,.03)';
+    c.style.borderColor = esSel ? 'rgba(0,255,136,.6)' : 'rgba(255,255,255,.08)';
+    c.style.transform = esSel ? 'scale(1.02)' : 'scale(1)';
+  });
+}
+
+// ── Ejecutar construcción ──
+async function ejecutarConstruccion() {
+  const desc = document.getElementById('buildDesc').value.trim();
+  const cliente = document.getElementById('buildCliente').value.trim();
+  const ciudad = document.getElementById('buildCiudad').value.trim();
+  const precio = document.getElementById('buildPrecio').value.trim();
+  const extra = document.getElementById('buildExtra').value.trim();
+
+  if (!desc) {
+    document.getElementById('buildDesc').style.borderColor = 'rgba(255,80,80,.5)';
+    document.getElementById('buildDesc').placeholder = '⚠️ Describe qué necesitas construir...';
+    return;
+  }
+
+  // Mostrar loading
+  document.getElementById('buildStatus').style.display = 'block';
+  document.getElementById('buildResult').style.display = 'none';
+  document.getElementById('btnConstruir').disabled = true;
+  document.getElementById('btnConstruir').textContent = '⚡ Construyendo...';
+  
+  const statusMsg = document.getElementById('buildStatusMsg');
+  const statusSub = document.getElementById('buildStatusSub');
+  
+  // Animación de estados
+  const pasos = [
+    ['⚡', 'ARIA está pensando...', 'Analizando tu petición'],
+    ['🧠', 'GPT-4o generando...', 'Creando el código profesional'],
+    ['🏗️', 'Construyendo...', 'Ensamblando diseño y contenido'],
+    ['☁️', 'Subiendo a Base44...', 'Generando URL pública'],
+  ];
+  
+  let pasoIdx = 0;
+  const interval = setInterval(() => {
+    if (pasoIdx < pasos.length) {
+      document.getElementById('buildStatusIcon').textContent = pasos[pasoIdx][0];
+      statusMsg.textContent = pasos[pasoIdx][1];
+      statusSub.textContent = pasos[pasoIdx][2];
+      pasoIdx++;
+    }
+  }, 2500);
+
+  try {
+    const datos = {};
+    if (cliente) datos.cliente = cliente;
+    if (ciudad) datos.ciudad = ciudad;
+    if (precio) datos.precio = precio;
+    if (extra) datos.extra = extra;
+    if (window.ariaLocation) datos.ubicacion = window.ariaLocation.raw;
+
+    // 1. Llamar a ariaBuilder para generar HTML
+    const res = await fetch(ARIA_BUILDER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo: buildTipoActual, descripcion: desc, datos })
+    });
+    const data = await res.json();
+    clearInterval(interval);
+
+    if (!data.ok) throw new Error(data.error || 'Error construyendo');
+
+    // 2. Si devuelve data URL, subir desde aquí
+    let urlFinal = data.url || '';
+    
+    if (urlFinal.startsWith('data:text/html;base64,')) {
+      // Pedir al proxy que lo guarde (fallback)
+      statusMsg.textContent = 'Guardando en Base44...';
+      // Usar el proxy con action build_save
+      const saveRes = await fetch(SUPERAGENT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_build',
+          tipo: buildTipoActual,
+          descripcion: desc,
+          html_b64: urlFinal.split(',')[1]
+        })
+      });
+      const saveData = await saveRes.json();
+      if (saveData.url) urlFinal = saveData.url;
+      // Si sigue siendo data URL, la usamos tal cual — funciona en el navegador
+    }
+
+    buildUrlActual = urlFinal;
+
+    // Guardar en historial local
+    const item = {
+      tipo: buildTipoActual,
+      descripcion: desc.slice(0, 60),
+      url: urlFinal,
+      fecha: new Date().toLocaleString('es-ES', {hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})
+    };
+    buildHistorial.unshift(item);
+    if (buildHistorial.length > 20) buildHistorial = buildHistorial.slice(0, 20);
+    localStorage.setItem('aria_builds', JSON.stringify(buildHistorial));
+
+    // Mostrar resultado
+    document.getElementById('buildStatus').style.display = 'none';
+    document.getElementById('buildResult').style.display = 'block';
+    document.getElementById('buildUrl').textContent = urlFinal.startsWith('data:') ? '📂 Archivo local (haz clic en Abrir)' : urlFinal;
+    document.getElementById('buildResultTipo').textContent = `${buildTipoActual.toUpperCase()} · ${data.chars_generados || '?'} chars generados`;
+    renderHistorial();
+
+    // Notificar en el chat
+    addMsg('aria', `✅ ¡Construido! Tu ${buildTipoActual} está lista.
+
+🔗 ${urlFinal.startsWith('data:') ? 'Haz clic en "Abrir" para verla' : urlFinal}
+
+¿La envío por email al cliente?`);
+
+  } catch(e) {
+    clearInterval(interval);
+    document.getElementById('buildStatusIcon').textContent = '❌';
+    statusMsg.textContent = 'Error construyendo';
+    statusSub.textContent = e.message;
+  } finally {
+    document.getElementById('btnConstruir').disabled = false;
+    document.getElementById('btnConstruir').textContent = '🏗️ CONSTRUIR AHORA';
+  }
+}
+
+// ── Acciones del resultado ──
+function abrirResultado() {
+  if (buildUrlActual) window.open(buildUrlActual, '_blank');
+}
+function copiarUrl() {
+  if (buildUrlActual) {
+    navigator.clipboard.writeText(buildUrlActual).then(() => {
+      const btn = event.target;
+      btn.textContent = '✅ Copiado';
+      setTimeout(() => btn.textContent = '📋 Copiar URL', 2000);
+    });
+  }
+}
+function mandarPorEmail() {
+  cerrarConstructor();
+  const msg = `Manda por email el enlace de esta ${buildTipoActual}: ${buildUrlActual}`;
+  document.getElementById('chatInput').value = msg;
+  document.getElementById('chatInput').focus();
+}
+function construirOtro() {
+  document.getElementById('buildResult').style.display = 'none';
+  document.getElementById('buildStatus').style.display = 'none';
+  document.getElementById('buildDesc').value = '';
+  document.getElementById('buildCliente').value = '';
+  document.getElementById('buildCiudad').value = '';
+  document.getElementById('buildPrecio').value = '';
+  document.getElementById('buildExtra').value = '';
+  document.getElementById('buildDesc').style.borderColor = 'rgba(255,255,255,.1)';
+}
+
+// ── Historial de builds ──
+function renderHistorial() {
+  if (buildHistorial.length === 0) return;
+  const container = document.getElementById('buildHistorial');
+  const list = document.getElementById('buildList');
+  container.style.display = 'block';
+  list.innerHTML = buildHistorial.slice(0, 5).map(item => `
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:#fff;">${item.tipo.toUpperCase()}</div>
+        <div style="font-size:12px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.descripcion}</div>
+        <div style="font-size:11px;color:#333;margin-top:2px;">${item.fecha}</div>
+      </div>
+      <button onclick="window.open('${item.url}','_blank')" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:#00ff88;border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap;">Abrir →</button>
+    </div>
+  `).join('');
+}
+
+// Seleccionar tipo por defecto al cargar
+window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
+</script>
+
 </body>
 </html>
