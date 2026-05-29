@@ -849,10 +849,36 @@ REGLAS DE ORO:
 
 Idioma: SIEMPRE español. Responde directo, sin rodeos.`;
 
-async function gpt(msgs,max=500){
+// DATOS REALES DE NEGOCIOS — inyectados en cada llamada a ARIA
+const ARIA_CONTEXTO = {
+  dentalia: {
+    total_leads: 12,
+    leads_nuevos: 10,
+    leads_contactados: 2,
+    leads_cerrados: 0,
+    potencial_mensual: "€14,400-€21,600/mes",
+    leads_criticos: [
+      {nombre:"Luz Adriana", ciudad:"Alicante", telefono:"+34642138944", clinica:"Clínica Dental Adriana"},
+      {nombre:"Daniel Mauricio Vergara", ciudad:"España", telefono:"+34614415620", clinica:""}
+    ]
+  },
+  renacer: { usuarios_activos: 3, total_usuarios: 3 },
+  academy: { alumnos_activos: 0, total_alumnos: 0 },
+  nexo: { status: "En desarrollo — beta próximamente" },
+  memoria: []
+};
+
+async function gpt(msgs,max=500,modoOverride=null){
   const ultimoMsg = msgs.filter(m=>m.role==='user').slice(-1)[0]?.content || '';
   historialCompleto.push({role:'user', content:ultimoMsg});
   contadorMensajes++;
+  
+  // Detectar modo automáticamente según contenido
+  let modoDetectado = modoOverride || 'chat';
+  const msgLower = ultimoMsg.toLowerCase();
+  if(msgLower.includes('traduc') || msgLower.includes('translate')) modoDetectado = 'traducir';
+  if(msgLower.includes('dinero') || msgLower.includes('lead') || msgLower.includes('negocio') || msgLower.includes('venta')) modoDetectado = 'dinero';
+  if(msgLower.includes('email') || msgLower.includes('correo') || msgLower.includes('mensaje') || msgLower.includes('redacta') || msgLower.includes('escribe')) modoDetectado = 'secretaria';
   
   try {
     const r=await fetch('https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy',{
@@ -861,7 +887,9 @@ async function gpt(msgs,max=500){
       body:JSON.stringify({
         mensaje: ultimoMsg,
         historial: historialCompleto.slice(-16),
-        modo: 'chat'
+        modo: modoDetectado,
+        contexto: ARIA_CONTEXTO,
+        sesion_id: 'app_' + Date.now()
       })
     });
     const d=await r.json();
