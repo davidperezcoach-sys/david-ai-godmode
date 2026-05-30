@@ -2447,6 +2447,28 @@ async function ejecutarConstruccion() {
     document.getElementById('buildResultTipo').textContent = `${buildTipoActual.toUpperCase()} · ${data.chars_generados || '?'} chars generados`;
     renderHistorial();
 
+    // 🎨 Fal.ai — generar imagen de portada personalizada para el resultado
+    const pasoMap = { presentacion:'p4', propuesta:'p5', landing:'p4', guion:'p3', informe:'p2', email:'p1', contrato:'p5', web:'p4' };
+    const falPaso = pasoMap[buildTipoActual] || 'p4';
+    const clienteVal = (document.getElementById('buildCliente')?.value || '').trim();
+    const ciudadVal  = (document.getElementById('buildCiudad')?.value  || '').trim();
+    fetch('https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/falImageGen', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paso: falPaso, clinica: clienteVal || buildTipoActual, ciudad: ciudadVal || 'España' })
+    }).then(r => r.json()).then(d => {
+      if (d.ok && d.url) {
+        const existingImg = document.getElementById('buildCoverImg');
+        if (!existingImg) {
+          const imgEl = document.createElement('div');
+          imgEl.id = 'buildCoverImg';
+          imgEl.style.cssText = 'width:100%;border-radius:12px;overflow:hidden;margin-bottom:16px;border:1px solid rgba(0,255,136,.2);';
+          imgEl.innerHTML = `<img src="${d.url}" style="width:100%;height:160px;object-fit:cover;" /><div style="font-size:10px;color:#555;padding:4px 8px;">🎨 Imagen generada por ${d.source === 'fal.ai' ? 'Fal.ai IA' : 'ARIA'}</div>`;
+          const buildResultDiv = document.getElementById('buildResult').querySelector('div');
+          buildResultDiv.insertBefore(imgEl, buildResultDiv.children[2]);
+        }
+      }
+    }).catch(() => {});
+
     // Notificar en el chat
     addMsg('aria', `✅ ¡Construido! Tu ${buildTipoActual} está lista.
 
@@ -3131,21 +3153,31 @@ async function iniciarDemoEnVivo() {
   }).then(r => r.json()).catch(() => ({}));
 
   const PASOS = getPasos(clinica, ciudad);
+  const FAL_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/falImageGen';
 
   for (let i = 0; i < PASOS.length; i++) {
     const p = PASOS[i];
     addPaso(p.id, p.emoji, p.label);
     setProgress(p.pct - 15);
 
-    // VOZ mientras la imagen carga desde URL fija pregenerada con IA
+    // Fal.ai — genera imagen personalizada en tiempo real (fallback automático si sin saldo)
+    const falPromise = fetch(FAL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paso: p.id, clinica, ciudad })
+    }).then(r => r.json()).then(d => {
+      if (d.ok && d.url) {
+        mostrarImagenEnPaso(p.id, d.url);
+        if (d.source === 'fal.ai') console.log('🎨 Fal.ai imagen generada para', p.id);
+      }
+    }).catch(() => { if (p.imgUrl) mostrarImagenEnPaso(p.id, p.imgUrl); });
+
+    // VOZ + imagen en paralelo
     const vozPromise = (typeof avatarSession !== 'undefined' && avatarSession)
       ? hablarAvatar(p.voz)
       : reproducirTTS(p.voz);
 
-    // Mostrar imagen inmediatamente (URL ya lista, sin esperar API)
-    if (p.imgUrl) mostrarImagenEnPaso(p.id, p.imgUrl);
-
-    await Promise.all([vozPromise, dormir(i === 0 ? 3500 : 2500)]);
+    await Promise.all([vozPromise, falPromise, dormir(i === 0 ? 3500 : 2500)]);
     setPasoOk(p.id);
     setProgress(p.pct);
     await dormir(300);
