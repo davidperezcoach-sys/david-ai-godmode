@@ -3295,15 +3295,27 @@ function toggleModoDemo() {
   const panelDemo = document.getElementById('panelDemo');
   const btn = document.getElementById('btnModoDemo');
   if (modoDemoActivo) {
-    panelChat.style.display = 'none';
+    // Ocultar chat, mostrar demo
+    panelChat.style.opacity = '0';
+    panelChat.style.pointerEvents = 'none';
+    panelChat.style.zIndex = '0';
     panelDemo.style.display = 'flex';
+    panelDemo.style.opacity = '1';
+    panelDemo.style.pointerEvents = 'auto';
+    panelDemo.style.zIndex = '10';
     btn.style.background = 'rgba(0,255,136,.2)';
     btn.style.borderColor = 'rgba(0,255,136,.6)';
     btn.textContent = '💬 Chat';
     if (typeof avatarSession !== 'undefined' && avatarSession) hablarAvatar('Perfecto. Modo demo activo. Rellena los datos de la clínica y construyo el sistema completo en vivo delante de ti.');
   } else {
-    panelDemo.style.display = 'none';
-    panelChat.style.display = 'flex';
+    // Ocultar demo, mostrar chat
+    panelDemo.style.opacity = '0';
+    panelDemo.style.pointerEvents = 'none';
+    panelDemo.style.zIndex = '0';
+    setTimeout(() => { panelDemo.style.display = 'none'; }, 200);
+    panelChat.style.opacity = '1';
+    panelChat.style.pointerEvents = 'auto';
+    panelChat.style.zIndex = '10';
     btn.style.background = 'rgba(0,255,136,.08)';
     btn.style.borderColor = 'rgba(0,255,136,.3)';
     btn.textContent = '🎬 Modo Demo';
