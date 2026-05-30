@@ -3039,31 +3039,39 @@ function resetDemo() {
 
 // ── Pasos con prompt de imagen ────────────────────────────────────────────
 function getPasos(clinica, ciudad) {
+  // Imágenes reales pregeneradas con IA — siempre disponibles, sin API externa
+  const IMGS = {
+    p1: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/2a072eb65_generated_image.png',
+    p2: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/de25fda84_generated_image.png',
+    p3: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/e402ac484_generated_image.png',
+    p4: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/b51b22c31_generated_image.png',
+    p5: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/0c87dfd86_generated_image.png',
+  };
   return [
     {
       id:'p1', emoji:'🔍', label:'Analizando tu clínica en Google...', pct:20,
-      voz: `Primero busco ${clinica} en Google. Extraigo tu rating real, reseñas, servicios y competencia en tiempo real.`,
-      imgPrompt: `modern dental clinic exterior ${ciudad} Spain, professional signage, daytime, photorealistic, 8k, architectural photography`
+      imgUrl: IMGS.p1,
+      voz: `Primero busco ${clinica} en Google. Extraigo tu rating real, reseñas, servicios y competencia en tiempo real.`
     },
     {
       id:'p2', emoji:'🧮', label:'Calculando ROI personalizado...', pct:40,
-      voz: `Calculo exactamente cuánto dinero estás perdiendo al mes. Leads no contestados, citas perdidas, pacientes que van a la competencia.`,
-      imgPrompt: `dental business analytics dashboard, ROI charts growing, dark UI, neon green data visualization, professional, modern`
+      imgUrl: IMGS.p2,
+      voz: `Calculo exactamente cuánto dinero estás perdiendo al mes. Leads no contestados, citas perdidas, pacientes que van a la competencia.`
     },
     {
       id:'p3', emoji:'🤖', label:'Fabricando tu agente de WhatsApp...', pct:60,
-      voz: `Construyo tu agente personalizado para ${clinica}. Lo entreno con tus servicios, tu tono y cómo manejar objeciones de pacientes.`,
-      imgPrompt: `AI dental receptionist chatbot WhatsApp conversation smartphone, green chat bubbles, professional dental clinic, futuristic UI`
+      imgUrl: IMGS.p3,
+      voz: `Construyo tu agente personalizado para ${clinica}. Lo entreno con tus servicios, tu tono y cómo manejar objeciones de pacientes.`
     },
     {
       id:'p4', emoji:'🌐', label:'Creando tu landing page...', pct:80,
-      voz: `Genero la landing page con tu nombre, ciudad y servicios. Alta conversión, diseño premium, lista para publicar hoy.`,
-      imgPrompt: `premium dental clinic landing page website, dark elegant design, modern typography, conversion focused, professional screenshot`
+      imgUrl: IMGS.p4,
+      voz: `Genero la landing page con tu nombre, ciudad y servicios. Alta conversión, diseño premium, lista para publicar hoy.`
     },
     {
       id:'p5', emoji:'📄', label:'Preparando propuesta comercial...', pct:100,
-      voz: `Por último, la propuesta completa con ROI real, plan de implementación y precio. Lista para firmar hoy mismo.`,
-      imgPrompt: `professional business proposal document dental AI system, clean white design, ROI metrics charts, corporate elegant`
+      imgUrl: IMGS.p5,
+      voz: `Por último, la propuesta completa con ROI real, plan de implementación y precio. Lista para firmar hoy mismo.`
     }
   ];
 }
@@ -3102,18 +3110,18 @@ async function iniciarDemoEnVivo() {
     addPaso(p.id, p.emoji, p.label);
     setProgress(p.pct - 15);
 
-    // VOZ + IMAGEN en paralelo simultáneo
-    const [, imgUrl] = await Promise.all([
-      (typeof avatarSession !== 'undefined' && avatarSession) ? hablarAvatar(p.voz) : reproducirTTS(p.voz),
-      generarImagenFal(p.imgPrompt)
-    ]);
+    // VOZ mientras la imagen carga desde URL fija pregenerada con IA
+    const vozPromise = (typeof avatarSession !== 'undefined' && avatarSession)
+      ? hablarAvatar(p.voz)
+      : reproducirTTS(p.voz);
 
-    await dormir(i === 0 ? 3500 : 2500);
+    // Mostrar imagen inmediatamente (URL ya lista, sin esperar API)
+    if (p.imgUrl) mostrarImagenEnPaso(p.id, p.imgUrl);
+
+    await Promise.all([vozPromise, dormir(i === 0 ? 3500 : 2500)]);
     setPasoOk(p.id);
     setProgress(p.pct);
-
-    if (imgUrl) mostrarImagenEnPaso(p.id, imgUrl);
-    await dormir(400);
+    await dormir(300);
   }
 
   // Resultado final del backend
