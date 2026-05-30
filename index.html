@@ -2522,7 +2522,7 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
      PANEL AVATAR ARIA — LiveAvatar en streaming real
 ═══════════════════════════════════════════════════ -->
 <div id="avatarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9900;backdrop-filter:blur(8px);">
-  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(760px,98vw);background:#0a0a12;border:1px solid rgba(139,92,246,.35);border-radius:20px;overflow:hidden;box-shadow:0 0 60px rgba(139,92,246,.25);">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(760px,98vw);max-height:95vh;background:#0a0a12;border:1px solid rgba(139,92,246,.35);border-radius:20px;overflow-y:auto;overflow-x:hidden;box-shadow:0 0 60px rgba(139,92,246,.25);">
     
     <!-- Header -->
     <div style="padding:16px 20px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(139,92,246,.2);display:flex;align-items:center;justify-content:space-between;">
