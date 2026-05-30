@@ -394,6 +394,7 @@ textarea::placeholder{color:var(--td);}
     <div class="modb" style="border-color:rgba(245,158,11,.35);color:#fcd34d;background:rgba(245,158,11,.06);" id="btnInterpreter" onclick="toggleInterprete()">🌐 Intérprete</div>
     <div class="modb" style="border-color:rgba(236,72,153,.35);color:#f9a8d4;background:rgba(236,72,153,.06);" id="btnConversacion" onclick="toggleConversacion()">🗣️ Conversación</div>
     <div class="modb" style="border-color:rgba(0,255,136,.4);color:#00ff88;background:rgba(0,255,136,.08);font-weight:700;" onclick="abrirConstructor()">🏗️ Construir</div>
+    <div class="modb" style="border-color:rgba(139,92,246,.5);color:#c4b5fd;background:rgba(139,92,246,.1);font-weight:700;" id="btnAvatar" onclick="abrirAvatar()">🎭 Avatar ARIA</div>
   </div>
 
   <div class="msgs" id="msgs">
@@ -2514,6 +2515,423 @@ function renderHistorial() {
 
 // Seleccionar tipo por defecto al cargar
 window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════
+     PANEL AVATAR ARIA — LiveAvatar en streaming real
+═══════════════════════════════════════════════════ -->
+<div id="avatarOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9900;backdrop-filter:blur(8px);">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(760px,98vw);background:#0a0a12;border:1px solid rgba(139,92,246,.35);border-radius:20px;overflow:hidden;box-shadow:0 0 60px rgba(139,92,246,.25);">
+    
+    <!-- Header -->
+    <div style="padding:16px 20px;background:rgba(139,92,246,.12);border-bottom:1px solid rgba(139,92,246,.2);display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#a78bfa;box-shadow:0 0 8px #a78bfa;" id="avatarStatusDot"></div>
+        <span style="color:#e2d9f3;font-weight:700;font-size:15px;">🎭 ARIA — Avatar en Vivo</span>
+        <span id="avatarStatusLabel" style="color:#7c6fa0;font-size:12px;">Listo para activar</span>
+      </div>
+      <button onclick="cerrarAvatar()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">✕ Cerrar</button>
+    </div>
+
+    <!-- Cuerpo: video + chat -->
+    <div style="display:flex;gap:0;min-height:420px;">
+      
+      <!-- Columna izquierda: video avatar -->
+      <div style="flex:1;background:#050508;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:16px;border-right:1px solid rgba(139,92,246,.15);">
+        
+        <!-- Contenedor video -->
+        <div id="avatarVideoBox" style="width:100%;max-width:340px;aspect-ratio:9/16;background:#0d0d1a;border-radius:16px;border:1px solid rgba(139,92,246,.3);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;">
+          <div id="avatarPlaceholder" style="text-align:center;color:#7c6fa0;">
+            <div style="font-size:48px;margin-bottom:8px;">🎭</div>
+            <div style="font-size:13px;">Avatar no iniciado</div>
+          </div>
+          <video id="avatarVideo" style="width:100%;height:100%;object-fit:cover;display:none;border-radius:16px;" autoplay playsinline></video>
+          <!-- Indicador hablando -->
+          <div id="avatarSpeakingBadge" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(139,92,246,.9);color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;">🎙️ ARIA hablando…</div>
+        </div>
+
+        <!-- Botones control -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+          <button id="btnIniciarAvatar" onclick="iniciarAvatar()" 
+            style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border:none;border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;">
+            ▶ Iniciar Avatar
+          </button>
+          <button id="btnDetenerAvatar" onclick="detenerAvatar()" 
+            style="display:none;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;">
+            ⏹ Detener
+          </button>
+        </div>
+        
+        <!-- Avatares disponibles -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+          <button onclick="cambiarAvatar('aria')" class="av-sel" id="avBtn_aria" style="background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.5);color:#c4b5fd;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-weight:700;">Ann Doctor ✓</button>
+          <button onclick="cambiarAvatar('judy')" class="av-sel" id="avBtn_judy" style="background:rgba(30,30,50,.5);border:1px solid rgba(100,100,150,.3);color:#9ca3af;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;">Judy Doctor</button>
+          <button onclick="cambiarAvatar('shawn')" class="av-sel" id="avBtn_shawn" style="background:rgba(30,30,50,.5);border:1px solid rgba(100,100,150,.3);color:#9ca3af;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;">Shawn</button>
+          <button onclick="cambiarAvatar('doctor')" class="av-sel" id="avBtn_doctor" style="background:rgba(30,30,50,.5);border:1px solid rgba(100,100,150,.3);color:#9ca3af;border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;">Dexter Doctor</button>
+        </div>
+      </div>
+
+      <!-- Columna derecha: chat con ARIA -->
+      <div style="flex:1;display:flex;flex-direction:column;max-width:340px;">
+        
+        <!-- Mensajes -->
+        <div id="avatarChatMsgs" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:280px;max-height:320px;">
+          <div style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2);border-radius:14px;border-bottom-left-radius:4px;padding:10px 14px;color:#e2d9f3;font-size:13px;line-height:1.5;">
+            👋 Hola David. Soy ARIA en modo avatar.<br>Inicia el avatar y podrás verme hablar en tiempo real mientras te respondo.
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div style="padding:12px;border-top:1px solid rgba(139,92,246,.15);">
+          <div style="display:flex;gap:8px;">
+            <input id="avatarInput" type="text" placeholder="Escribe a ARIA…" onkeydown="if(event.key==='Enter')enviarAAvatar()"
+              style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;outline:none;" />
+            <button onclick="enviarAAvatar()" 
+              style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:13px;cursor:pointer;font-weight:700;">→</button>
+            <button id="btnMicAvatar" onclick="toggleMicAvatar()" title="Hablar con ARIA"
+              style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer;">🎙️</button>
+          </div>
+          <div id="avatarMicStatus" style="color:#7c6fa0;font-size:11px;margin-top:6px;text-align:center;min-height:16px;"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer info -->
+    <div style="padding:10px 20px;background:rgba(0,0,0,.3);border-top:1px solid rgba(139,92,246,.1);text-align:center;color:#4b4570;font-size:11px;">
+      LiveAvatar API · LITE Mode · ARIA NEXUS v9 · Voz: OpenAI TTS "nova"
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCRIPTS AVATAR ═══ -->
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────
+const LA_TOKEN_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy';
+const PROXY_URL    = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaAgenteDemo';
+
+let avatarSession     = null;   // { session_id, session_token }
+let avatarPeerConn    = null;   // RTCPeerConnection
+let avatarDataChannel = null;   // RTCDataChannel para comandos
+let avatarSeleccionado = 'aria';
+let avatarMicActivo   = false;
+let avatarMicRec      = null;
+let avatarHistorial   = [];
+
+// ─── ABRIR / CERRAR ───────────────────────────────────────────────
+function abrirAvatar() {
+  document.getElementById('avatarOverlay').style.display = 'block';
+}
+function cerrarAvatar() {
+  document.getElementById('avatarOverlay').style.display = 'none';
+  detenerAvatar();
+}
+
+// ─── CAMBIAR AVATAR ───────────────────────────────────────────────
+function cambiarAvatar(key) {
+  avatarSeleccionado = key;
+  document.querySelectorAll('.av-sel').forEach(b => {
+    b.style.background = 'rgba(30,30,50,.5)';
+    b.style.borderColor = 'rgba(100,100,150,.3)';
+    b.style.color = '#9ca3af';
+    b.textContent = b.textContent.replace(' ✓','');
+  });
+  const btn = document.getElementById('avBtn_' + key);
+  if (btn) {
+    btn.style.background = 'rgba(139,92,246,.2)';
+    btn.style.borderColor = 'rgba(139,92,246,.5)';
+    btn.style.color = '#c4b5fd';
+    btn.textContent += ' ✓';
+  }
+  if (avatarSession) {
+    detenerAvatar();
+    setTimeout(iniciarAvatar, 500);
+  }
+}
+
+// ─── OBTENER TOKEN ────────────────────────────────────────────────
+async function obtenerTokenAvatar() {
+  setAvatarStatus('Obteniendo token…', '#fcd34d');
+  const res = await fetch(LA_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'liveavatar_token', avatar: avatarSeleccionado })
+  });
+  const data = await res.json();
+  if (!data.session_token) throw new Error(data.error || 'Sin token');
+  return data;
+}
+
+// ─── INICIAR AVATAR (WebRTC) ──────────────────────────────────────
+async function iniciarAvatar() {
+  try {
+    document.getElementById('btnIniciarAvatar').disabled = true;
+    document.getElementById('btnIniciarAvatar').textContent = '⏳ Conectando…';
+
+    const tokenData = await obtenerTokenAvatar();
+    avatarSession = tokenData;
+    setAvatarStatus('Conectando WebRTC…', '#fcd34d');
+
+    // Crear RTCPeerConnection
+    avatarPeerConn = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+
+    // Recibir stream de video del avatar
+    avatarPeerConn.ontrack = (e) => {
+      const video = document.getElementById('avatarVideo');
+      const placeholder = document.getElementById('avatarPlaceholder');
+      if (e.streams && e.streams[0]) {
+        video.srcObject = e.streams[0];
+        video.style.display = 'block';
+        placeholder.style.display = 'none';
+        setAvatarStatus('Avatar activo ✓', '#86efac');
+      }
+    };
+
+    // DataChannel para enviar texto al avatar
+    avatarDataChannel = avatarPeerConn.createDataChannel('avatar-cmd');
+    avatarDataChannel.onopen  = () => console.log('[Avatar] DataChannel open');
+    avatarDataChannel.onclose = () => console.log('[Avatar] DataChannel closed');
+
+    // Crear oferta SDP
+    const offer = await avatarPeerConn.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true,
+    });
+    await avatarPeerConn.setLocalDescription(offer);
+
+    // Enviar oferta a LiveAvatar
+    const startRes = await fetch('https://api.liveavatar.com/v1/sessions/' + avatarSession.session_id + '/start', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + avatarSession.session_token,
+      },
+      body: JSON.stringify({ sdp: offer.sdp, type: offer.type }),
+    });
+    const startData = await startRes.json();
+
+    if (startData.code !== 1000) throw new Error(startData.message || 'Error start session');
+
+    // Establecer respuesta del servidor
+    await avatarPeerConn.setRemoteDescription({
+      type: startData.data.type,
+      sdp: startData.data.sdp,
+    });
+
+    // ICE candidates del servidor
+    if (startData.data.ice_candidates) {
+      for (const ic of startData.data.ice_candidates) {
+        await avatarPeerConn.addIceCandidate(ic);
+      }
+    }
+
+    document.getElementById('btnIniciarAvatar').style.display = 'none';
+    document.getElementById('btnDetenerAvatar').style.display = 'block';
+
+    // Saludo inicial
+    setTimeout(() => hablarAvatar('Hola David. Avatar ARIA activado. Estoy contigo.'), 2000);
+
+  } catch (err) {
+    console.error('[Avatar] Error:', err);
+    setAvatarStatus('Error: ' + err.message, '#f87171');
+    document.getElementById('btnIniciarAvatar').disabled = false;
+    document.getElementById('btnIniciarAvatar').textContent = '▶ Iniciar Avatar';
+    agregarMsgAvatar('aria', '❌ Error conectando: ' + err.message);
+  }
+}
+
+// ─── DETENER AVATAR ───────────────────────────────────────────────
+function detenerAvatar() {
+  if (avatarPeerConn) { avatarPeerConn.close(); avatarPeerConn = null; }
+  avatarSession = null;
+  avatarDataChannel = null;
+  const video = document.getElementById('avatarVideo');
+  video.srcObject = null; video.style.display = 'none';
+  document.getElementById('avatarPlaceholder').style.display = 'flex';
+  document.getElementById('avatarSpeakingBadge').style.display = 'none';
+  document.getElementById('btnIniciarAvatar').style.display = 'block';
+  document.getElementById('btnIniciarAvatar').disabled = false;
+  document.getElementById('btnIniciarAvatar').textContent = '▶ Iniciar Avatar';
+  document.getElementById('btnDetenerAvatar').style.display = 'none';
+  setAvatarStatus('Listo para activar', '#7c6fa0');
+}
+
+// ─── HACER HABLAR AL AVATAR ───────────────────────────────────────
+async function hablarAvatar(texto) {
+  if (!avatarSession) return;
+  try {
+    document.getElementById('avatarSpeakingBadge').style.display = 'block';
+
+    // 1. Pedir TTS a ARIA proxy (OpenAI TTS nova)
+    const ttsRes = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modo: 'tts', texto })
+    });
+    const ttsData = await ttsRes.json();
+
+    if (ttsData.audio_b64) {
+      // 2. Enviar audio al avatar via LiveAvatar
+      const sendRes = await fetch('https://api.liveavatar.com/v1/sessions/' + avatarSession.session_id + '/speak', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + avatarSession.session_token,
+        },
+        body: JSON.stringify({ audio: ttsData.audio_b64, format: 'mp3' }),
+      });
+      await sendRes.json();
+    } else {
+      // Fallback: reproducir audio localmente sin mover labios
+      const audio = new Audio('data:audio/mp3;base64,' + (ttsData.audio_b64 || ''));
+      audio.play().catch(()=>{});
+    }
+    setTimeout(() => { document.getElementById('avatarSpeakingBadge').style.display = 'none'; }, 4000);
+  } catch(e) {
+    document.getElementById('avatarSpeakingBadge').style.display = 'none';
+    console.error('[hablarAvatar]', e);
+  }
+}
+
+// ─── CHAT CON ARIA ────────────────────────────────────────────────
+async function enviarAAvatar() {
+  const input = document.getElementById('avatarInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  agregarMsgAvatar('user', msg);
+  avatarHistorial.push({ role:'user', content: msg });
+
+  // Spinner
+  const thinkId = 'think_' + Date.now();
+  agregarMsgAvatar('aria', '⏳', thinkId);
+
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mensaje: msg,
+        historial: avatarHistorial.slice(-10),
+        modo: 'chat',
+      })
+    });
+    const data = await res.json();
+    const respuesta = data.respuesta || data.reply || 'Sin respuesta';
+
+    // Reemplazar spinner
+    const el = document.getElementById(thinkId);
+    if (el) el.textContent = respuesta;
+
+    avatarHistorial.push({ role:'assistant', content: respuesta });
+
+    // Si el avatar está activo → que hable
+    if (avatarSession) hablarAvatar(respuesta);
+    else {
+      // Reproducir TTS localmente aunque el avatar no esté
+      reproducirTTS(respuesta);
+    }
+  } catch(e) {
+    const el = document.getElementById(thinkId);
+    if (el) el.textContent = '❌ Error: ' + e.message;
+  }
+}
+
+async function reproducirTTS(texto) {
+  try {
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modo: 'tts', texto })
+    });
+    const data = await res.json();
+    if (data.audio_b64) {
+      const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
+      audio.play().catch(()=>{});
+    }
+  } catch(e) { console.error('[TTS]', e); }
+}
+
+// ─── MIC EN AVATAR ────────────────────────────────────────────────
+function toggleMicAvatar() {
+  if (avatarMicActivo) { pararMicAvatar(); return; }
+  iniciarMicAvatar();
+}
+
+function iniciarMicAvatar() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    avatarMicActivo = true;
+    document.getElementById('btnMicAvatar').style.background = 'rgba(239,68,68,.3)';
+    document.getElementById('btnMicAvatar').style.color = '#f87171';
+    document.getElementById('avatarMicStatus').textContent = '🔴 Grabando… suelta para enviar';
+
+    avatarMicRec = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    const chunks = [];
+    avatarMicRec.ondataavailable = e => chunks.push(e.data);
+    avatarMicRec.onstop = async () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const b64 = reader.result.split(',')[1];
+        document.getElementById('avatarMicStatus').textContent = '⚡ Procesando…';
+        try {
+          // Transcribir con Whisper via proxy
+          const res = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ modo: 'voz', audio_b64: b64, historial: [], clinica: 'DentalIA PRO', ciudad: 'Madrid' })
+          });
+          const data = await res.json();
+          const texto = data.texto_usuario || data.texto || data.transcripcion || '';
+          if (texto) {
+            document.getElementById('avatarInput').value = texto;
+            document.getElementById('avatarMicStatus').textContent = '✓ ' + texto.slice(0,50);
+            enviarAAvatar();
+          }
+        } catch(e) {
+          document.getElementById('avatarMicStatus').textContent = '❌ Error transcribiendo';
+        }
+        stream.getTracks().forEach(t => t.stop());
+      };
+      reader.readAsDataURL(blob);
+    };
+    avatarMicRec.start();
+  }).catch(() => {
+    document.getElementById('avatarMicStatus').textContent = '❌ Sin acceso al micrófono';
+  });
+}
+
+function pararMicAvatar() {
+  if (avatarMicRec && avatarMicRec.state === 'recording') avatarMicRec.stop();
+  avatarMicActivo = false;
+  document.getElementById('btnMicAvatar').style.background = 'rgba(139,92,246,.15)';
+  document.getElementById('btnMicAvatar').style.color = '#a78bfa';
+}
+
+// ─── UTILIDADES ───────────────────────────────────────────────────
+function agregarMsgAvatar(quien, texto, id) {
+  const box = document.getElementById('avatarChatMsgs');
+  const div = document.createElement('div');
+  if (id) div.id = id;
+  div.style.cssText = quien === 'user'
+    ? 'background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;border-bottom-right-radius:4px;padding:10px 14px;color:#e2e8f0;font-size:13px;line-height:1.5;align-self:flex-end;max-width:90%;'
+    : 'background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.2);border-radius:14px;border-bottom-left-radius:4px;padding:10px 14px;color:#e2d9f3;font-size:13px;line-height:1.5;max-width:90%;';
+  div.textContent = texto;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setAvatarStatus(msg, color) {
+  document.getElementById('avatarStatusLabel').textContent = msg;
+  document.getElementById('avatarStatusLabel').style.color = color || '#7c6fa0';
+  const dot = document.getElementById('avatarStatusDot');
+  dot.style.background = color || '#7c6fa0';
+  dot.style.boxShadow = '0 0 8px ' + (color || '#7c6fa0');
+}
 </script>
 
 </body>
