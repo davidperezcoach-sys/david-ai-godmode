@@ -2608,7 +2608,7 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
 <!-- ═══ SCRIPTS AVATAR ═══ -->
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────
-const LA_TOKEN_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy';
+const LA_TOKEN_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/liveAvatarToken';
 const PROXY_URL    = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaAgenteDemo';
 
 let avatarSession     = null;   // { session_id, session_token }
@@ -2656,7 +2656,7 @@ async function obtenerTokenAvatar() {
   const res = await fetch(LA_TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'liveavatar_token', avatar: avatarSeleccionado })
+    body: JSON.stringify({ avatar: avatarSeleccionado })
   });
   const data = await res.json();
   if (!data.session_token) throw new Error(data.error || 'Sin token');
