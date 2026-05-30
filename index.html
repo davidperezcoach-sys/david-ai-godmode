@@ -2698,6 +2698,16 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────
 const LA_TOKEN_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/liveAvatarToken';
+
+// ── SISTEMA RECONEXIÓN INVISIBLE ─────────────────────────────────
+// Sesión activa y sesión en precarga (siempre lista para swap)
+let avatarSesionActiva  = null;   // { peerConn, session, dataChannel, startedAt }
+let avatarSesionBackup  = null;   // preconectada en background
+let avatarSwapTimer     = null;   // timer que dispara el swap
+let avatarSwapInterval  = null;   // interval que actualiza el countdown
+let avatarSwapEn        = 270000; // 4:30 min en ms — swap antes de que LiveAvatar corte a los 5 min
+let avatarEnReconexion  = false;  // flag para evitar doble swap
+let avatarVideo2        = null;   // segundo elemento video para crossfade
 const PROXY_URL    = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaAgenteDemo';
 
 let avatarSession     = null;   // { session_id, session_token }
@@ -2752,100 +2762,285 @@ async function obtenerTokenAvatar() {
   return data;
 }
 
-// ─── INICIAR AVATAR (WebRTC) ──────────────────────────────────────
+// ─── CREAR CONEXIÓN WEBRTC (reutilizable para activa y backup) ────
+async function crearConexionWebRTC(esBackup = false) {
+  const tokenData = await obtenerTokenAvatar();
+  
+  const pc = new RTCPeerConnection({
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+  });
+
+  const sesion = { peerConn: pc, session: tokenData, dataChannel: null, startedAt: Date.now(), stream: null };
+
+  // Track de video/audio
+  pc.ontrack = (e) => {
+    if (e.streams && e.streams[0]) {
+      sesion.stream = e.streams[0];
+      if (!esBackup) {
+        // Aplicar stream al video principal
+        aplicarStreamAlVideo(e.streams[0]);
+      }
+      console.log(`[Avatar] Stream listo — ${esBackup ? 'BACKUP' : 'ACTIVA'}`);
+    }
+  };
+
+  // DataChannel
+  const dc = pc.createDataChannel('avatar-cmd');
+  dc.onopen  = () => console.log(`[Avatar] DC open — ${esBackup ? 'backup' : 'activa'}`);
+  dc.onclose = () => console.log(`[Avatar] DC closed`);
+  sesion.dataChannel = dc;
+
+  // SDP offer
+  const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+  await pc.setLocalDescription(offer);
+
+  // Enviar a LiveAvatar
+  const startRes = await fetch('https://api.liveavatar.com/v1/sessions/' + tokenData.session_id + '/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenData.session_token },
+    body: JSON.stringify({ sdp: offer.sdp, type: offer.type }),
+  });
+  const startData = await startRes.json();
+  if (startData.code !== 1000) throw new Error(startData.message || 'Error start');
+
+  await pc.setRemoteDescription({ type: startData.data.type, sdp: startData.data.sdp });
+  if (startData.data.ice_candidates) {
+    for (const ic of startData.data.ice_candidates) await pc.addIceCandidate(ic);
+  }
+
+  return sesion;
+}
+
+function aplicarStreamAlVideo(stream) {
+  const video = document.getElementById('avatarVideo');
+  const placeholder = document.getElementById('avatarPlaceholder');
+  video.srcObject = stream;
+  video.style.display = 'block';
+  if (placeholder) placeholder.style.display = 'none';
+  setAvatarStatus('Avatar activo ✓', '#86efac');
+}
+
+// ─── SWAP INVISIBLE — intercambio de sesión sin corte ─────────────
+async function ejecutarSwapInvisible() {
+  if (avatarEnReconexion) return;
+  avatarEnReconexion = true;
+  console.log('[Avatar] 🔄 Swap invisible iniciado...');
+
+  try {
+    // La sesión backup ya debería estar lista
+    if (!avatarSesionBackup || !avatarSesionBackup.stream) {
+      console.log('[Avatar] Backup no lista, creando ahora...');
+      avatarSesionBackup = await crearConexionWebRTC(false);
+      await new Promise(r => setTimeout(r, 2000)); // dar tiempo al stream
+    }
+
+    const video = document.getElementById('avatarVideo');
+    
+    // Crossfade suave: opacity 1→0→1
+    video.style.transition = 'opacity 0.4s ease';
+    video.style.opacity = '0';
+
+    await new Promise(r => setTimeout(r, 400));
+
+    // Aplicar nueva sesión
+    const nuevaSesion = avatarSesionBackup;
+    aplicarStreamAlVideo(nuevaSesion.stream);
+    video.style.opacity = '1';
+
+    // Actualizar variables globales
+    const sesionVieja = avatarSesionActiva;
+    avatarSesionActiva = nuevaSesion;
+    avatarSession      = nuevaSesion.session;       // compatibilidad con código existente
+    avatarPeerConn     = nuevaSesion.peerConn;
+    avatarDataChannel  = nuevaSesion.dataChannel;
+    avatarSesionBackup = null;
+
+    // Cerrar sesión vieja limpiamente
+    if (sesionVieja?.peerConn) {
+      try { sesionVieja.peerConn.close(); } catch(e) {}
+    }
+
+    console.log('[Avatar] ✅ Swap completado — nueva sesión activa');
+    
+    // Programar siguiente swap + precargar siguiente backup
+    programarSwap();
+    setTimeout(() => precargarBackup(), 5000); // precarga backup en 5s
+
+  } catch(err) {
+    console.error('[Avatar] ❌ Error en swap:', err);
+    // Fallback elegante: mostrar avatar CSS animado mientras reconecta
+    activarFallbackElegante();
+    setTimeout(() => reconectarDesde0(), 3000);
+  } finally {
+    avatarEnReconexion = false;
+  }
+}
+
+// ─── PRECARGA BACKUP EN BACKGROUND ───────────────────────────────
+async function precargarBackup() {
+  if (avatarSesionBackup) return; // ya hay una
+  try {
+    console.log('[Avatar] 📡 Precargando sesión backup...');
+    avatarSesionBackup = await crearConexionWebRTC(true);
+    console.log('[Avatar] ✅ Backup lista y en espera');
+  } catch(err) {
+    console.warn('[Avatar] Backup falló, reintentando en 30s:', err.message);
+    setTimeout(() => precargarBackup(), 30000);
+  }
+}
+
+// ─── PROGRAMAR SWAP ───────────────────────────────────────────────
+function programarSwap() {
+  if (avatarSwapTimer) clearTimeout(avatarSwapTimer);
+  if (avatarSwapInterval) clearInterval(avatarSwapInterval);
+  
+  const SWAP_EN_MS = avatarSwapEn; // 270000 = 4:30 min
+  const inicio = Date.now();
+
+  // Countdown silencioso en consola
+  avatarSwapInterval = setInterval(() => {
+    const transcurrido = Date.now() - inicio;
+    const restante = Math.max(0, SWAP_EN_MS - transcurrido);
+    const seg = Math.floor(restante / 1000);
+    if (seg % 30 === 0 && seg > 0) console.log(`[Avatar] ⏱️ Swap en ${seg}s`);
+    if (restante <= 0) clearInterval(avatarSwapInterval);
+  }, 1000);
+
+  // A los 4:00 min — precarga backup si no existe
+  setTimeout(() => {
+    if (!avatarSesionBackup) precargarBackup();
+  }, SWAP_EN_MS - 30000);
+
+  // A los 4:30 min — ejecutar swap
+  avatarSwapTimer = setTimeout(() => {
+    console.log('[Avatar] ⚡ Hora del swap automático');
+    ejecutarSwapInvisible();
+  }, SWAP_EN_MS);
+}
+
+// ─── FALLBACK ELEGANTE (si todo falla) ───────────────────────────
+function activarFallbackElegante() {
+  const video = document.getElementById('avatarVideo');
+  const box   = document.getElementById('avatarVideoBox');
+  video.style.display = 'none';
+  
+  // Mostrar avatar CSS animado con ondas
+  let fallbackEl = document.getElementById('avatarFallback');
+  if (!fallbackEl) {
+    fallbackEl = document.createElement('div');
+    fallbackEl.id = 'avatarFallback';
+    fallbackEl.style.cssText = `
+      position:absolute;inset:0;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:12px;
+      background:radial-gradient(ellipse at center,rgba(139,92,246,.15) 0%,#0d0d1a 70%);
+    `;
+    fallbackEl.innerHTML = `
+      <div style="width:80px;height:80px;border-radius:50%;
+        background:linear-gradient(135deg,#7c3aed,#5b21b6);
+        display:flex;align-items:center;justify-content:center;
+        font-size:36px;box-shadow:0 0 40px rgba(139,92,246,.5);
+        animation:pulse 1.5s ease-in-out infinite;">🤖</div>
+      <div style="display:flex;gap:4px;align-items:center;height:30px;">
+        ${[1,2,3,4,5].map(i=>`<div style="width:4px;background:linear-gradient(to top,#7c3aed,#a78bfa);border-radius:2px;animation:lw .8s ease-in-out infinite;animation-delay:${i*0.1}s;height:${[8,16,24,16,8][i-1]}px;"></div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:#7c6fa0;font-weight:700;letter-spacing:.5px;">ARIA · Reconectando...</div>
+    `;
+    box.appendChild(fallbackEl);
+  }
+  fallbackEl.style.display = 'flex';
+  setAvatarStatus('Reconectando…', '#fcd34d');
+}
+
+function desactivarFallback() {
+  const fallbackEl = document.getElementById('avatarFallback');
+  if (fallbackEl) fallbackEl.style.display = 'none';
+  document.getElementById('avatarVideo').style.display = 'block';
+}
+
+async function reconectarDesde0() {
+  try {
+    const nuevaSesion = await crearConexionWebRTC(false);
+    avatarSesionActiva = nuevaSesion;
+    avatarSession      = nuevaSesion.session;
+    avatarPeerConn     = nuevaSesion.peerConn;
+    avatarDataChannel  = nuevaSesion.dataChannel;
+    desactivarFallback();
+    programarSwap();
+    setTimeout(() => precargarBackup(), 5000);
+  } catch(err) {
+    console.error('[Avatar] Reconexión fallida, reintentando en 5s');
+    setTimeout(() => reconectarDesde0(), 5000);
+  }
+}
+
+// ─── INICIAR AVATAR (punto de entrada) ────────────────────────────
 async function iniciarAvatar() {
   try {
     document.getElementById('btnIniciarAvatar').disabled = true;
     document.getElementById('btnIniciarAvatar').textContent = '⏳ Conectando…';
+    setAvatarStatus('Conectando…', '#fcd34d');
 
-    const tokenData = await obtenerTokenAvatar();
-    avatarSession = tokenData;
-    setAvatarStatus('Conectando WebRTC…', '#fcd34d');
-
-    // Crear RTCPeerConnection
-    avatarPeerConn = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    });
-
-    // Recibir stream de video del avatar
-    avatarPeerConn.ontrack = (e) => {
-      const video = document.getElementById('avatarVideo');
-      const placeholder = document.getElementById('avatarPlaceholder');
-      if (e.streams && e.streams[0]) {
-        video.srcObject = e.streams[0];
-        video.style.display = 'block';
-        placeholder.style.display = 'none';
-        setAvatarStatus('Avatar activo ✓', '#86efac');
-      }
-    };
-
-    // DataChannel para enviar texto al avatar
-    avatarDataChannel = avatarPeerConn.createDataChannel('avatar-cmd');
-    avatarDataChannel.onopen  = () => console.log('[Avatar] DataChannel open');
-    avatarDataChannel.onclose = () => console.log('[Avatar] DataChannel closed');
-
-    // Crear oferta SDP
-    const offer = await avatarPeerConn.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: true,
-    });
-    await avatarPeerConn.setLocalDescription(offer);
-
-    // Enviar oferta a LiveAvatar
-    const startRes = await fetch('https://api.liveavatar.com/v1/sessions/' + avatarSession.session_id + '/start', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + avatarSession.session_token,
-      },
-      body: JSON.stringify({ sdp: offer.sdp, type: offer.type }),
-    });
-    const startData = await startRes.json();
-
-    if (startData.code !== 1000) throw new Error(startData.message || 'Error start session');
-
-    // Establecer respuesta del servidor
-    await avatarPeerConn.setRemoteDescription({
-      type: startData.data.type,
-      sdp: startData.data.sdp,
-    });
-
-    // ICE candidates del servidor
-    if (startData.data.ice_candidates) {
-      for (const ic of startData.data.ice_candidates) {
-        await avatarPeerConn.addIceCandidate(ic);
-      }
-    }
+    // Crear sesión activa
+    const sesion = await crearConexionWebRTC(false);
+    avatarSesionActiva = sesion;
+    avatarSession      = sesion.session;
+    avatarPeerConn     = sesion.peerConn;
+    avatarDataChannel  = sesion.dataChannel;
 
     document.getElementById('btnIniciarAvatar').style.display = 'none';
     document.getElementById('btnDetenerAvatar').style.display = 'block';
 
+    // Programar swap automático a los 4:30
+    programarSwap();
+
+    // Precarga backup en 15s (cuando el usuario ya ve el avatar)
+    setTimeout(() => precargarBackup(), 15000);
+
     // Saludo inicial
-    setTimeout(() => hablarAvatar('Hola David. Avatar ARIA activado. Estoy contigo.'), 2000);
+    setTimeout(() => hablarAvatar('Hola. Avatar ARIA activado. Estoy contigo.'), 2000);
 
   } catch (err) {
     console.error('[Avatar] Error:', err);
     setAvatarStatus('Error: ' + err.message, '#f87171');
     document.getElementById('btnIniciarAvatar').disabled = false;
     document.getElementById('btnIniciarAvatar').textContent = '▶ Iniciar Avatar';
-    agregarMsgAvatar('aria', '❌ Error conectando: ' + err.message);
   }
 }
 
 // ─── DETENER AVATAR ───────────────────────────────────────────────
 function detenerAvatar() {
-  if (avatarPeerConn) { avatarPeerConn.close(); avatarPeerConn = null; }
-  avatarSession = null;
-  avatarDataChannel = null;
+  // Limpiar timers
+  if (avatarSwapTimer)    { clearTimeout(avatarSwapTimer);    avatarSwapTimer    = null; }
+  if (avatarSwapInterval) { clearInterval(avatarSwapInterval); avatarSwapInterval = null; }
+  
+  // Cerrar sesión activa
+  if (avatarPeerConn) { try { avatarPeerConn.close(); } catch(e){} avatarPeerConn = null; }
+  
+  // Cerrar sesión backup
+  if (avatarSesionBackup?.peerConn) { try { avatarSesionBackup.peerConn.close(); } catch(e){} }
+  
+  // Reset estado
+  avatarSession      = null;
+  avatarSesionActiva = null;
+  avatarSesionBackup = null;
+  avatarDataChannel  = null;
+  avatarEnReconexion = false;
+  
   const video = document.getElementById('avatarVideo');
-  video.srcObject = null; video.style.display = 'none';
+  video.srcObject = null; video.style.display = 'none'; video.style.opacity = '1';
   document.getElementById('avatarPlaceholder').style.display = 'flex';
   document.getElementById('avatarSpeakingBadge').style.display = 'none';
   document.getElementById('btnIniciarAvatar').style.display = 'block';
   document.getElementById('btnIniciarAvatar').disabled = false;
   document.getElementById('btnIniciarAvatar').textContent = '▶ Iniciar Avatar';
   document.getElementById('btnDetenerAvatar').style.display = 'none';
+  const fb = document.getElementById('avatarFallback');
+  if (fb) fb.style.display = 'none';
   setAvatarStatus('Listo para activar', '#7c6fa0');
+  console.log('[Avatar] Detenido limpiamente');
 }
 
 // ─── HACER HABLAR AL AVATAR ───────────────────────────────────────
