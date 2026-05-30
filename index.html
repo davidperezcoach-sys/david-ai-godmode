@@ -2645,6 +2645,44 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
             <div id="demoProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#059669,#34d399);transition:width .5s ease;"></div>
           </div>
           <div id="demoPasos" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px;"></div>
+          <!-- ══ PANEL AGENTE EN VIVO — texto + voz ══ -->
+          <div id="panelAgenteLive" style="display:none;flex-direction:column;border-top:1px solid rgba(0,255,136,.15);flex-shrink:0;max-height:320px;">
+            <!-- Header -->
+            <div style="padding:10px 16px;background:rgba(0,255,136,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:blink 1s infinite;"></div>
+                <span style="color:#86efac;font-weight:800;font-size:13px;" id="agenteNombreLabel">AGENTE EN VIVO</span>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button id="btnModoTexto" onclick="setModoAgente('texto')" style="background:rgba(0,255,136,.25);border:1px solid rgba(0,255,136,.5);color:#86efac;border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;">💬 Texto</button>
+                <button id="btnModoVoz" onclick="setModoAgente('voz')" style="background:rgba(30,30,50,.5);border:1px solid rgba(100,100,150,.3);color:#9ca3af;border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;">🎙️ Voz</button>
+                <button onclick="cerrarAgenteLive()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#f87171;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;">✕</button>
+              </div>
+            </div>
+            <!-- Chat mensajes -->
+            <div id="agenteChatMsgs" style="flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:8px;min-height:100px;max-height:180px;">
+              <div style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:12px;border-bottom-left-radius:3px;padding:10px 13px;color:#d1fae5;font-size:13px;line-height:1.5;max-width:85%;" id="agenteMsgBienvenida">
+                Hola 👋 Soy el agente de <span id="agenteClinicaTag" style="color:#86efac;font-weight:700;"></span>. ¿En qué puedo ayudarte hoy?
+              </div>
+            </div>
+            <!-- Input texto -->
+            <div id="agenteInputTexto" style="padding:10px 12px;border-top:1px solid rgba(0,255,136,.1);display:flex;gap:8px;flex-shrink:0;">
+              <input id="agenteMsg" type="text" placeholder="Escribe al agente de la clínica..." 
+                onkeydown="if(event.key==='Enter')enviarAgenteTexto()"
+                style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(0,255,136,.25);border-radius:10px;padding:9px 13px;color:#fff;font-size:13px;outline:none;font-family:inherit;" />
+              <button onclick="enviarAgenteTexto()" style="background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;">→</button>
+            </div>
+            <!-- Input voz -->
+            <div id="agenteInputVoz" style="display:none;padding:10px 12px;border-top:1px solid rgba(0,255,136,.1);flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
+              <button id="btnVozAgente" onclick="toggleVozAgente()" 
+                style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#059669,#047857);border:none;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 0 20px rgba(5,150,105,.4);transition:all .2s;">
+                🎙️
+              </button>
+              <div id="vozAgenteStatus" style="font-size:11px;color:#6b7280;text-align:center;">Pulsa para hablar con el agente</div>
+              <div id="vozAgenteTranscript" style="font-size:12px;color:#86efac;text-align:center;min-height:16px;font-style:italic;"></div>
+            </div>
+          </div>
+
           <div id="demoResultados" style="display:none;padding:16px 20px;border-top:1px solid rgba(0,255,136,.12);">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="demoCards"></div>
             <button onclick="resetDemo()" style="margin-top:12px;width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#888;border-radius:10px;padding:10px;font-size:13px;cursor:pointer;">🔄 Nueva demo</button>
@@ -3077,6 +3115,242 @@ function toggleModoDemo() {
   }
 }
 
+
+// ══════════════════════════════════════════════════════
+// AGENTE EN VIVO — texto + voz premium
+// ══════════════════════════════════════════════════════
+const AGENTE_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/agenteLive';
+let agenteHistorial = [];
+let agenteClinica = '';
+let agenteCiudad = '';
+let agenteDoctor = '';
+let agenteModoActual = 'texto';
+let vozAgenteActiva = false;
+let vozAgenteRecorder = null;
+let vozAgenteChunks = [];
+
+function abrirAgenteLive(clinica, ciudad, doctor) {
+  agenteClinica = clinica;
+  agenteCiudad = ciudad;
+  agenteDoctor = doctor || '';
+  agenteHistorial = [];
+  
+  // Actualizar labels
+  document.getElementById('agenteNombreLabel').textContent = `🤖 AGENTE DE ${clinica.toUpperCase()} EN VIVO`;
+  document.getElementById('agenteClinicaTag').textContent = clinica;
+  
+  // Limpiar mensajes excepto bienvenida
+  const msgs = document.getElementById('agenteChatMsgs');
+  while (msgs.children.length > 1) msgs.removeChild(msgs.lastChild);
+  
+  // Mostrar panel
+  const panel = document.getElementById('panelAgenteLive');
+  panel.style.display = 'flex';
+  panel.style.flexDirection = 'column';
+  
+  // Animar entrada
+  panel.style.animation = 'wIn .4s ease';
+  
+  // Focus en input
+  setTimeout(() => document.getElementById('agenteMsg')?.focus(), 300);
+}
+
+function cerrarAgenteLive() {
+  document.getElementById('panelAgenteLive').style.display = 'none';
+  agenteHistorial = [];
+}
+
+function setModoAgente(modo) {
+  agenteModoActual = modo;
+  document.getElementById('agenteInputTexto').style.display = modo === 'texto' ? 'flex' : 'none';
+  document.getElementById('agenteInputVoz').style.display  = modo === 'voz'   ? 'flex' : 'none';
+  
+  // Estilos botones
+  document.getElementById('btnModoTexto').style.background = modo === 'texto' ? 'rgba(0,255,136,.25)' : 'rgba(30,30,50,.5)';
+  document.getElementById('btnModoTexto').style.borderColor = modo === 'texto' ? 'rgba(0,255,136,.5)' : 'rgba(100,100,150,.3)';
+  document.getElementById('btnModoTexto').style.color = modo === 'texto' ? '#86efac' : '#9ca3af';
+  document.getElementById('btnModoVoz').style.background = modo === 'voz' ? 'rgba(0,255,136,.25)' : 'rgba(30,30,50,.5)';
+  document.getElementById('btnModoVoz').style.borderColor = modo === 'voz' ? 'rgba(0,255,136,.5)' : 'rgba(100,100,150,.3)';
+  document.getElementById('btnModoVoz').style.color = modo === 'voz' ? '#86efac' : '#9ca3af';
+}
+
+async function enviarAgenteTexto() {
+  const input = document.getElementById('agenteMsg');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  
+  agregarMsgAgente('usuario', msg);
+  agenteHistorial.push({ role: 'user', content: msg });
+  
+  // Indicador typing
+  const typingId = 'typing_' + Date.now();
+  agregarMsgAgente('typing', '...', typingId);
+  
+  try {
+    const res = await fetch(AGENTE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clinica: agenteClinica, ciudad: agenteCiudad, doctor: agenteDoctor,
+        mensaje: msg, historial: agenteHistorial.slice(-8), modo: 'texto'
+      })
+    });
+    const data = await res.json();
+    
+    // Eliminar typing
+    document.getElementById(typingId)?.remove();
+    
+    if (data.ok) {
+      agenteHistorial.push({ role: 'assistant', content: data.respuesta });
+      agregarMsgAgente('agente', data.respuesta);
+    }
+  } catch(e) {
+    document.getElementById(typingId)?.remove();
+    agregarMsgAgente('agente', 'Un momento, ahora te respondo...');
+  }
+}
+
+async function toggleVozAgente() {
+  if (vozAgenteActiva) {
+    // Parar grabación
+    vozAgenteActiva = false;
+    vozAgenteRecorder?.stop();
+    document.getElementById('btnVozAgente').style.background = 'linear-gradient(135deg,#059669,#047857)';
+    document.getElementById('btnVozAgente').style.boxShadow = '0 0 20px rgba(5,150,105,.4)';
+    document.getElementById('vozAgenteStatus').textContent = 'Procesando...';
+    return;
+  }
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    vozAgenteActiva = true;
+    vozAgenteChunks = [];
+    
+    // Visual activo
+    document.getElementById('btnVozAgente').style.background = 'linear-gradient(135deg,#dc2626,#b91c1c)';
+    document.getElementById('btnVozAgente').style.boxShadow = '0 0 25px rgba(220,38,38,.6)';
+    document.getElementById('vozAgenteStatus').textContent = '🔴 Grabando... pulsa para enviar';
+    document.getElementById('vozAgenteTranscript').textContent = '';
+    
+    vozAgenteRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+    vozAgenteRecorder.ondataavailable = e => { if (e.data.size > 0) vozAgenteChunks.push(e.data); };
+    vozAgenteRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(vozAgenteChunks, { type: 'audio/webm' });
+      await procesarVozAgente(blob);
+    };
+    vozAgenteRecorder.start();
+  } catch(e) {
+    document.getElementById('vozAgenteStatus').textContent = 'Error: activa el micrófono';
+  }
+}
+
+async function procesarVozAgente(blob) {
+  document.getElementById('vozAgenteStatus').textContent = '🧠 Transcribiendo...';
+  
+  try {
+    // Transcribir con Whisper
+    const form = new FormData();
+    form.append('file', blob, 'audio.webm');
+    form.append('model', 'whisper-1');
+    form.append('language', 'es');
+    
+    const whisperRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${window.OPENAI_KEY || ''}` },
+      body: form
+    });
+    const whisperData = await whisperRes.json();
+    const texto = whisperData.text || '';
+    
+    if (!texto) {
+      document.getElementById('vozAgenteStatus').textContent = 'No entendí, pulsa y habla de nuevo';
+      return;
+    }
+    
+    document.getElementById('vozAgenteTranscript').textContent = `"${texto}"`;
+    document.getElementById('vozAgenteStatus').textContent = '💬 El agente responde...';
+    
+    agregarMsgAgente('usuario', `🎙️ ${texto}`);
+    agenteHistorial.push({ role: 'user', content: texto });
+    
+    // Obtener respuesta CON audio
+    const res = await fetch(AGENTE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        clinica: agenteClinica, ciudad: agenteCiudad, doctor: agenteDoctor,
+        mensaje: texto, historial: agenteHistorial.slice(-8), modo: 'voz'
+      })
+    });
+    const data = await res.json();
+    
+    if (data.ok) {
+      agenteHistorial.push({ role: 'assistant', content: data.respuesta });
+      agregarMsgAgente('agente', data.respuesta);
+      
+      // Reproducir audio del agente
+      if (data.audio_base64) {
+        const audioBlob = base64ToBlob(data.audio_base64, 'audio/mp3');
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audio.play();
+        document.getElementById('vozAgenteStatus').textContent = '🔊 El agente está hablando...';
+        audio.onended = () => {
+          document.getElementById('vozAgenteStatus').textContent = 'Pulsa para hablar con el agente';
+          document.getElementById('vozAgenteTranscript').textContent = '';
+        };
+      }
+    }
+  } catch(e) {
+    document.getElementById('vozAgenteStatus').textContent = 'Error — intenta de nuevo';
+  }
+  
+  // Reset botón
+  document.getElementById('btnVozAgente').style.background = 'linear-gradient(135deg,#059669,#047857)';
+  document.getElementById('btnVozAgente').style.boxShadow = '0 0 20px rgba(5,150,105,.4)';
+  vozAgenteActiva = false;
+}
+
+function base64ToBlob(base64, mime) {
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+function agregarMsgAgente(tipo, texto, customId) {
+  const box = document.getElementById('agenteChatMsgs');
+  const d = document.createElement('div');
+  if (customId) d.id = customId;
+  
+  if (tipo === 'usuario') {
+    d.style.cssText = 'align-self:flex-end;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);border-radius:12px;border-bottom-right-radius:3px;padding:9px 13px;color:#e2e8f0;font-size:13px;line-height:1.5;max-width:82%;';
+  } else if (tipo === 'agente') {
+    d.style.cssText = 'background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);border-radius:12px;border-bottom-left-radius:3px;padding:9px 13px;color:#d1fae5;font-size:13px;line-height:1.5;max-width:85%;';
+    // Badge agente
+    const badge = document.createElement('div');
+    badge.style.cssText = 'font-size:10px;color:#6b7280;margin-bottom:3px;font-weight:700;';
+    badge.textContent = `🤖 AGENTE ${agenteClinica.toUpperCase()}`;
+    d.insertBefore(badge, d.firstChild);
+  } else {
+    // typing
+    d.style.cssText = 'background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.1);border-radius:12px;padding:8px 13px;color:#6b7280;font-size:13px;font-style:italic;';
+    d.textContent = '💬 escribiendo...';
+  }
+  
+  if (tipo !== 'typing') {
+    const span = document.createElement('span');
+    span.textContent = texto;
+    d.appendChild(span);
+  }
+  
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+// ══════════════════════════════════════════════════════
+
 function resetDemo() {
   document.getElementById('demoFormPanel').style.display = 'flex';
   document.getElementById('demoBuildPanel').style.display = 'none';
@@ -3110,7 +3384,8 @@ function getPasos(clinica, ciudad) {
     {
       id:'p3', emoji:'🤖', label:'Fabricando tu agente de WhatsApp...', pct:60,
       imgUrl: IMGS.p3,
-      voz: `Construyo tu agente personalizado para ${clinica}. Lo entreno con tus servicios, tu tono y cómo manejar objeciones de pacientes.`
+      voz: `Construyo tu agente personalizado para ${clinica}. Lo entreno con tus servicios, tono y cómo manejar objeciones. Ahora mismo puedes hablar con él — escríbele o usa tu voz. Es tu agente, ya entrenado para ${clinica}.`,
+      demo: true
     },
     {
       id:'p4', emoji:'🌐', label:'Creando tu landing page...', pct:80,
@@ -3180,6 +3455,23 @@ async function iniciarDemoEnVivo() {
     await Promise.all([vozPromise, falPromise, dormir(i === 0 ? 3500 : 2500)]);
     setPasoOk(p.id);
     setProgress(p.pct);
+    
+    // Si este paso tiene demo interactiva → abrir agente en vivo
+    if (p.demo) {
+      const clinicaVal = clinica;
+      const ciudadVal  = ciudad;
+      const doctorVal  = (document.getElementById('demoNombre')?.value || '').trim();
+      abrirAgenteLive(clinicaVal, ciudadVal, doctorVal);
+      // ARIA anuncia la demo
+      const anuncio = `Ahora mismo puedes hablar con tu agente. Escríbele o usa la voz. Está entrenado para ${clinicaVal} — responde como lo haría en real.`;
+      if (typeof avatarSession !== 'undefined' && avatarSession) {
+        hablarAvatar(anuncio);
+      } else {
+        reproducirTTS(anuncio);
+      }
+      await dormir(4000);
+    }
+    
     await dormir(300);
   }
 
