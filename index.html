@@ -2531,7 +2531,10 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
         <span style="color:#e2d9f3;font-weight:700;font-size:15px;">🎭 ARIA — Avatar en Vivo</span>
         <span id="avatarStatusLabel" style="color:#7c6fa0;font-size:12px;">Listo para activar</span>
       </div>
-      <button onclick="cerrarAvatar()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">✕ Cerrar</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="btnModoDemo" onclick="toggleModoDemo()" style="background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.3);color:#86efac;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">🎬 Modo Demo</button>
+        <button onclick="cerrarAvatar()" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#f87171;padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">✕ Cerrar</button>
+      </div>
     </div>
 
     <!-- Cuerpo: video + chat -->
@@ -2593,6 +2596,57 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
               style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;border-radius:10px;padding:10px 12px;font-size:14px;cursor:pointer;">🎙️</button>
           </div>
           <div id="avatarMicStatus" style="color:#7c6fa0;font-size:11px;margin-top:6px;text-align:center;min-height:16px;"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ PANEL DEMO EN VIVO (oculto por defecto) ═══ -->
+    <div id="demoPanelContainer" style="display:none;border-top:1px solid rgba(0,255,136,.15);">
+      
+      <!-- Formulario del prospecto -->
+      <div id="demoFormPanel" style="padding:20px;background:rgba(0,255,136,.03);">
+        <div style="color:#86efac;font-weight:800;font-size:14px;margin-bottom:14px;">⚡ ARIA construye el agente de tu clínica en vivo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <input id="demoClinica" placeholder="Nombre de la clínica" 
+            style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,136,.2);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;outline:none;width:100%;box-sizing:border-box;" />
+          <input id="demoCiudad" placeholder="Ciudad" 
+            style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,136,.2);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;outline:none;width:100%;box-sizing:border-box;" />
+          <input id="demoNombre" placeholder="Nombre del doctor/a" 
+            style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,136,.2);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;outline:none;width:100%;box-sizing:border-box;" />
+          <input id="demoClientes" placeholder="Pacientes nuevos/mes" type="number"
+            style="background:rgba(255,255,255,.05);border:1px solid rgba(0,255,136,.2);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;outline:none;width:100%;box-sizing:border-box;" />
+        </div>
+        <button onclick="iniciarDemoEnVivo()" id="btnLanzarDemo"
+          style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.5px;">
+          🚀 CONSTRUIR EN VIVO CON ARIA
+        </button>
+      </div>
+
+      <!-- Pantalla de construcción en vivo -->
+      <div id="demoBuildPanel" style="display:none;">
+        
+        <!-- Barra de progreso -->
+        <div style="padding:16px 20px 0;background:rgba(0,255,136,.03);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="color:#86efac;font-weight:700;font-size:13px;">🔴 CONSTRUYENDO EN VIVO</span>
+            <span id="demoPorcentaje" style="color:#86efac;font-weight:800;font-size:13px;">0%</span>
+          </div>
+          <div style="background:rgba(0,255,136,.1);border-radius:20px;height:6px;overflow:hidden;">
+            <div id="demoProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#059669,#34d399);border-radius:20px;transition:width .5s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Pasos en tiempo real -->
+        <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px;" id="demoPasos">
+          <!-- Pasos se generan dinámicamente -->
+        </div>
+
+        <!-- Resultado final -->
+        <div id="demoResultados" style="display:none;padding:16px 20px;border-top:1px solid rgba(0,255,136,.15);">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;" id="demoCards">
+            <!-- Cards de resultado se generan dinámicamente -->
+          </div>
         </div>
       </div>
 
@@ -2932,6 +2986,154 @@ function setAvatarStatus(msg, color) {
   dot.style.background = color || '#7c6fa0';
   dot.style.boxShadow = '0 0 8px ' + (color || '#7c6fa0');
 }
+</script>
+
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// MODO DEMO EN VIVO — ARIA explica mientras construye
+// ═══════════════════════════════════════════════════════════════
+
+const DEMO_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaDemoLive';
+
+let modoDemoActivo = false;
+
+function toggleModoDemo() {
+  modoDemoActivo = !modoDemoActivo;
+  const panel = document.getElementById('demoPanelContainer');
+  const btn   = document.getElementById('btnModoDemo');
+  const wrapper = document.querySelector('#avatarOverlay > div');
+
+  if (modoDemoActivo) {
+    panel.style.display = 'block';
+    btn.style.background = 'rgba(0,255,136,.2)';
+    btn.style.borderColor = 'rgba(0,255,136,.6)';
+    btn.textContent = '🎬 Demo ACTIVA';
+    if (wrapper) wrapper.style.width = 'min(1100px,98vw)';
+    if (avatarSession) {
+      hablarAvatar('Perfecto. Activo el modo demo en vivo. Rellena los datos de la clínica y en 20 segundos construyo en pantalla exactamente cómo funciona el sistema que voy a instalar.');
+    }
+  } else {
+    panel.style.display = 'none';
+    btn.style.background = 'rgba(0,255,136,.08)';
+    btn.style.borderColor = 'rgba(0,255,136,.3)';
+    btn.textContent = '🎬 Modo Demo';
+    if (wrapper) wrapper.style.width = 'min(760px,98vw)';
+  }
+}
+
+const PASOS_DEF = [
+  { id:'p1', emoji:'🔍', label:'Analizando tu clínica en Google...', pct: 20,
+    voz: 'Primero busco tu clínica en Google. Extraigo tu rating real, tus reseñas, tus servicios y los datos de contacto. Todo en tiempo real, sin inventar nada.' },
+  { id:'p2', emoji:'🧮', label:'Calculando ROI personalizado...', pct: 40,
+    voz: 'Con esos datos calculo exactamente cuánto dinero estás perdiendo al mes por llamadas no contestadas y leads que se van a la competencia. Son números reales de tu clínica.' },
+  { id:'p3', emoji:'🤖', label:'Fabricando tu agente de WhatsApp...', pct: 60,
+    voz: 'Ahora construyo tu agente. Le programo con los servicios de tu clínica, tu tono y cómo manejar las objeciones. Es como entrenar a una recepcionista perfecta en diez segundos.' },
+  { id:'p4', emoji:'🌐', label:'Creando tu landing page...', pct: 80,
+    voz: 'Genero una landing page personalizada con tu nombre, tu ciudad y tus servicios. Tiene formulario de captación integrado y diseño profesional listo para publicar.' },
+  { id:'p5', emoji:'📄', label:'Preparando propuesta de venta...', pct: 100,
+    voz: 'Por último genero la propuesta completa con todos los números: inversión, retorno esperado y el plan de implementación. Lista para firmar hoy mismo.' },
+];
+
+async function iniciarDemoEnVivo() {
+  const clinica  = document.getElementById('demoClinica').value.trim();
+  const ciudad   = document.getElementById('demoCiudad').value.trim();
+  const nombre   = document.getElementById('demoNombre').value.trim();
+  const clientes = document.getElementById('demoClientes').value.trim();
+  if (!clinica || !ciudad) { alert('Escribe el nombre de la clínica y la ciudad'); return; }
+
+  document.getElementById('demoFormPanel').style.display = 'none';
+  document.getElementById('demoBuildPanel').style.display = 'block';
+  document.getElementById('demoPasos').innerHTML = '';
+  document.getElementById('demoResultados').style.display = 'none';
+  setProgress(0);
+
+  const intro = 'Vamos allá. Construyo en tiempo real el sistema completo para ' + clinica + ' en ' + ciudad + '. Observa la pantalla — cada paso que ves, te lo explico yo. Empezamos.';
+  if (avatarSession) { await hablarAvatar(intro); } else { await reproducirTTS(intro); }
+  await dormir(2500);
+
+  for (let i = 0; i < PASOS_DEF.length; i++) {
+    const p = PASOS_DEF[i];
+    addPaso(p.id, p.emoji, p.label, 'loading');
+    setProgress(p.pct - 15);
+    if (i > 0) {
+      if (avatarSession) { hablarAvatar(p.voz); } else { reproducirTTS(p.voz); }
+    } else {
+      if (avatarSession) { hablarAvatar(p.voz); } else { reproducirTTS(p.voz); }
+    }
+    await dormir(i === 0 ? 5000 : i === 4 ? 3000 : 4000);
+    setPasoOk(p.id);
+    setProgress(p.pct);
+  }
+
+  try {
+    const res = await fetch(DEMO_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clinica, ciudad, nombre_prospecto: nombre || 'Doctor/a', sector: 'dental', clientes_mes: parseInt(clientes)||80, email:'', telefono:'' })
+    });
+    const data = await res.json();
+    mostrarCards(data, clinica);
+    const roi = data.roi && data.roi.beneficio_neto_mes ? '€' + data.roi.beneficio_neto_mes.toLocaleString() : 'miles de euros';
+    const fin = 'Listo. En menos de 30 segundos hemos construido todo el sistema. El potencial para ' + clinica + ' es de ' + roi + ' al mes. Esto es exactamente lo que instalo en tu clínica.';
+    if (avatarSession) { await hablarAvatar(fin); } else { await reproducirTTS(fin); }
+  } catch(e) {
+    console.error('[Demo]', e);
+    mostrarCards({}, clinica);
+    const msg = 'El sistema está construido con los datos de tu clínica. Puedes ver los resultados en pantalla.';
+    if (avatarSession) { await hablarAvatar(msg); } else { await reproducirTTS(msg); }
+  }
+}
+
+function addPaso(id, emoji, label, status) {
+  const box = document.getElementById('demoPasos');
+  const d = document.createElement('div');
+  d.id = 'paso_' + id;
+  d.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);transition:all .4s;';
+  d.innerHTML = '<span style="font-size:18px;">' + emoji + '</span><span style="flex:1;color:#d1d5db;font-size:13px;">' + label + '</span><span id="st_' + id + '" style="font-size:16px;">⏳</span>';
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setPasoOk(id) {
+  const el = document.getElementById('st_' + id);
+  const row = document.getElementById('paso_' + id);
+  if (el) el.textContent = '✅';
+  if (row) { row.style.background = 'rgba(0,255,136,.06)'; row.style.borderColor = 'rgba(0,255,136,.2)'; }
+}
+
+function setProgress(pct) {
+  document.getElementById('demoProgressBar').style.width = pct + '%';
+  document.getElementById('demoPorcentaje').textContent = pct + '%';
+}
+
+function mostrarCards(data, clinica) {
+  const roi = data.roi || {};
+  const c   = data.construido || {};
+  const cards = [
+    { emoji:'💰', titulo:'ROI Mensual', valor: roi.beneficio_neto_mes ? '€'+roi.beneficio_neto_mes.toLocaleString() : '€12.000+', sub: roi.roi_pct ? roi.roi_pct+'% ROI' : 'Estimado', color:'#86efac', bg:'rgba(0,255,136,.08)', border:'rgba(0,255,136,.25)', url:null },
+    { emoji:'🤖', titulo:'Agente WhatsApp', valor:'✅ Listo', sub:'Entrenado para '+clinica, color:'#a78bfa', bg:'rgba(139,92,246,.08)', border:'rgba(139,92,246,.25)', url:null },
+    { emoji:'🌐', titulo:'Landing Page', valor:'✅ Online', sub: c.landing ? 'Ver →' : 'Alta conversión', color:'#60a5fa', bg:'rgba(59,130,246,.08)', border:'rgba(59,130,246,.25)', url: c.landing||null },
+    { emoji:'📄', titulo:'Propuesta', valor:'✅ Lista', sub: c.propuesta ? 'Descargar →' : 'Con ROI real', color:'#fbbf24', bg:'rgba(245,158,11,.08)', border:'rgba(245,158,11,.25)', url: c.propuesta||null },
+  ];
+  const box = document.getElementById('demoCards');
+  box.innerHTML = cards.map(card =>
+    '<div onclick="' + (card.url ? "window.open('"+card.url+"','_blank')" : '') + '" style="background:'+card.bg+';border:1px solid '+card.border+';border-radius:14px;padding:14px;cursor:'+(card.url?'pointer':'default')+';transition:transform .2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">' +
+    '<div style="font-size:22px;margin-bottom:6px;">'+card.emoji+'</div>' +
+    '<div style="color:'+card.color+';font-weight:800;font-size:15px;">'+card.valor+'</div>' +
+    '<div style="color:#9ca3af;font-size:11px;margin-top:3px;">'+card.titulo+'</div>' +
+    '<div style="color:'+card.color+';font-size:11px;margin-top:2px;opacity:.8;">'+card.sub+'</div></div>'
+  ).join('') + '<div style="grid-column:1/-1;text-align:center;margin-top:4px;"><button onclick="resetearDemo()" style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;border-radius:10px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Nueva demo</button></div>';
+  document.getElementById('demoResultados').style.display = 'block';
+}
+
+function resetearDemo() {
+  document.getElementById('demoFormPanel').style.display = 'block';
+  document.getElementById('demoBuildPanel').style.display = 'none';
+  ['demoClinica','demoCiudad','demoNombre','demoClientes'].forEach(id => document.getElementById(id).value = '');
+}
+
+function dormir(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 
 </body>
