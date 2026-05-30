@@ -2566,6 +2566,11 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
       </div>
 
       <div style="font-size:10px;color:#3d3560;text-align:center;">LiveAvatar · Labios + Manos + Expresiones</div>
+      <!-- Imagen activa del paso actual — aparece bajo el avatar durante la demo -->
+      <div id="avatarStepImg" style="display:none;width:100%;border-radius:14px;overflow:hidden;border:1px solid rgba(0,255,136,.25);position:relative;">
+        <img id="avatarStepImgEl" src="" style="width:100%;height:auto;display:block;object-fit:cover;" />
+        <div id="avatarStepLabel" style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.8));color:#86efac;font-size:11px;font-weight:700;padding:10px 10px 7px;text-align:center;"></div>
+      </div>
     </div>
 
     <!-- ══ COLUMNA DERECHA: CHAT o DEMO ══ -->
@@ -2992,13 +2997,30 @@ async function generarImagenFal(prompt) {
 function mostrarImagenEnPaso(pasoId, imgUrl) {
   if (!imgUrl) return;
   demoImagenes.push(imgUrl);
+
+  // 1. Insertar imagen en el paso de la lista (columna derecha)
   const row = document.getElementById('paso_' + pasoId);
-  if (!row) return;
-  const img = document.createElement('img');
-  img.src = imgUrl;
-  img.style.cssText = 'width:100%;border-radius:10px;margin-top:8px;border:1px solid rgba(0,255,136,.2);animation:fadeIn .6s ease;display:block;';
-  row.appendChild(img);
-  row.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  if (row) {
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.style.cssText = 'width:100%;border-radius:10px;margin-top:8px;border:1px solid rgba(0,255,136,.2);animation:fadeIn .6s ease;display:block;';
+    row.appendChild(img);
+    row.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  // 2. Actualizar panel de imagen bajo el avatar (mezcla vídeo + imagen en tiempo real)
+  const stepImgBox   = document.getElementById('avatarStepImg');
+  const stepImgEl    = document.getElementById('avatarStepImgEl');
+  const stepLabel    = document.getElementById('avatarStepLabel');
+  if (stepImgBox && stepImgEl) {
+    stepImgEl.src = imgUrl;
+    if (stepLabel) {
+      const labels = { p1:'🔍 Análisis clínica', p2:'🧮 ROI calculado', p3:'🤖 Agente WhatsApp', p4:'🌐 Landing page', p5:'📄 Propuesta lista' };
+      stepLabel.textContent = labels[pasoId] || '';
+    }
+    stepImgBox.style.display = 'block';
+    stepImgBox.style.animation = 'fadeIn .5s ease';
+  }
 }
 
 // ── QR Generator ─────────────────────────────────────────────────────────
@@ -3007,6 +3029,11 @@ function generarQR(url) {
 }
 
 // ── Toggle Modo Demo ──────────────────────────────────────────────────────
+function resetAvatarStepImg() {
+  const b = document.getElementById('avatarStepImg');
+  if (b) b.style.display = 'none';
+}
+
 function toggleModoDemo() {
   modoDemoActivo = !modoDemoActivo;
   const panelChat = document.getElementById('panelChat');
