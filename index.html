@@ -2553,7 +2553,7 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
 <!-- ═══════════════════════════════════════════════════
      PANEL AVATAR ARIA — LiveAvatar en streaming real
 ═══════════════════════════════════════════════════ -->
-<div id="avatarOverlay" style="display:none;position:fixed;inset:0;background:#07070f;z-index:9900;">
+<div id="avatarOverlay" style="display:none;position:fixed;top:28px;left:0;right:0;bottom:0;background:#07070f;z-index:9900;">
   <!-- ══ HEADER ══ -->
   <div style="height:52px;background:rgba(0,0,0,.6);border-bottom:1px solid rgba(139,92,246,.2);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;">
     <div style="display:flex;align-items:center;gap:10px;">
@@ -2743,10 +2743,16 @@ function abrirAvatar() {
     btnD.textContent = '🎬 Modo Demo';
   }
   document.getElementById('avatarOverlay').style.display = 'block';
+  // Auto-iniciar avatar
+  setTimeout(() => { if (!avatarSesionActiva) iniciarAvatar(); }, 800);
+  // Ocultar barra stats para más espacio
+  const sb = document.getElementById('ariaStatsBar'); if(sb) sb.style.display='none';
 }
 function cerrarAvatar() {
   document.getElementById('avatarOverlay').style.display = 'none';
   detenerAvatar();
+  // Restaurar barra stats
+  const sb2 = document.getElementById('ariaStatsBar'); if(sb2) sb2.style.display='flex';
 }
 
 // ─── CAMBIAR AVATAR ───────────────────────────────────────────────
