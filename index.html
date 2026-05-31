@@ -3115,7 +3115,7 @@ async function iniciarAvatar() {
       };
     } else {
       setAvatarStatus('Avatar en vivo ✓ (sin WS)', '#86efac');
-      setTimeout(() => hablarAvatar('Hola David. Soy ARIA.'), 1000);
+      // Sin WS — solo video, sin saludo de voz
     }
 
     programarSwap();
@@ -3167,53 +3167,51 @@ function detenerAvatar() {
 async function hablarAvatar(texto) {
   const badge = document.getElementById('avatarSpeakingBadge');
   if (badge) badge.style.display = 'block';
-
   try {
-    // PASO 1: Generar voz con ElevenLabs (la misma voz de ARIA Flowie)
+    // ÚNICA fuente de audio: ElevenLabs (voz de ARIA Flowie)
     const audioUrl = await genVoz(texto);
 
-    // PASO 2: Si el avatar está activo → enviar PCM al WS para sincronizar labios
+    // Si avatar activo → enviar PCM al WS solo para mover labios (sin reproducir)
     if (avatarSesionActiva && avatarWS && avatarWS.readyState === WebSocket.OPEN) {
-      // Obtener PCM paralelo para sincronizar labios (no se reproduce — solo mueve la boca)
       fetch(AVATAR_TTS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ modo: 'tts_pcm', texto })
-      }).then(r => r.json()).then(ttsData => {
-        if (ttsData.audio_b64) {
-          const b64 = ttsData.audio_b64;
-          const CHUNK = 48000;
-          (async () => {
-            for (let start = 0; start < b64.length; start += CHUNK) {
-              avatarWS.send(JSON.stringify({ type: 'agent.speak', audio: b64.slice(start, start + CHUNK), event_id: 'spk_' + Date.now() }));
-              await new Promise(r => setTimeout(r, 40));
-            }
-            avatarWS.send(JSON.stringify({ type: 'agent.speak_end', event_id: 'end_' + Date.now() }));
-          })();
-        }
-      }).catch(e => console.warn('[Avatar WS PCM]', e));
+      }).then(r => r.json()).then(td => {
+        if (!td.audio_b64) return;
+        const b64 = td.audio_b64;
+        const CHUNK = 48000;
+        (async () => {
+          for (let s = 0; s < b64.length; s += CHUNK) {
+            if (avatarWS.readyState !== WebSocket.OPEN) break;
+            avatarWS.send(JSON.stringify({ type: 'agent.speak', audio: b64.slice(s, s + CHUNK), event_id: 'spk_' + Date.now() }));
+            await new Promise(r => setTimeout(r, 40));
+          }
+          avatarWS.send(JSON.stringify({ type: 'agent.speak_end', event_id: 'end_' + Date.now() }));
+        })();
+      }).catch(() => {});
     }
 
-    // PASO 3: Reproducir voz ElevenLabs (la única que David escucha)
+    // Reproducir ElevenLabs — UNA SOLA VEZ
     if (audioUrl) {
-      await new Promise((resolve) => {
+      await new Promise(resolve => {
         const audio = new Audio(audioUrl);
         audio.onended = resolve;
         audio.onerror = resolve;
         audio.play().catch(resolve);
       });
     } else {
-      // Fallback: OpenAI TTS si ElevenLabs falla
-      await reproducirTTS(texto);
+      // Fallback solo si ElevenLabs falla completamente
+      hablarNavegador(texto);
     }
-
   } catch(e) {
     console.error('[hablarAvatar]', e);
-    await reproducirTTS(texto);
+    hablarNavegador(texto);
   } finally {
     setTimeout(() => { if (badge) badge.style.display = 'none'; }, 500);
   }
 }
+
 
 
 
@@ -3252,12 +3250,8 @@ async function enviarAAvatar() {
 
     avatarHistorial.push({ role:'assistant', content: respuesta });
 
-    // Si el avatar está activo → que hable
-    // hablarAvatar ya incluye fallback TTS si el avatar no está conectado
+    // Voz: SOLO hablarAvatar (ElevenLabs). Nada más.
     hablarAvatar(respuesta);
-    if(false) {  // legacy — ya no se usa directamente
-      reproducirTTS(respuesta);
-    }
   } catch(e) {
     const el = document.getElementById(thinkId);
     if (el) el.textContent = '❌ Error: ' + e.message;
