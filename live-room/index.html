@@ -3,666 +3,381 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ARIA LIVE ROOM</title>
+<title>ARIA MAESTRO — Live Room</title>
 <style>
-  :root {
-    --gold: #ffd700;
-    --orange: #ff6b35;
-    --dark: #07070f;
-    --card: #0d0d1a;
-    --card2: #12122a;
-    --border: rgba(255,215,0,0.15);
-    --text: #e8e8f0;
-    --muted: #666688;
-    --green: #00ff88;
-    --red: #ff4466;
-    --blue: #4488ff;
-  }
+:root{--gold:#ffd700;--orange:#ff6b35;--dark:#07070f;--card:#0d0d1a;--card2:#12122a;--border:rgba(255,215,0,0.12);--text:#e8e8f0;--muted:#666688;--green:#00ff88;--red:#ff4466;--blue:#4488ff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--dark);color:var(--text);min-height:100vh;overflow-x:hidden;}
+#particles{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;}
+.particle{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,215,0,0.2),transparent);animation:float linear infinite;}
+@keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0;}10%{opacity:1;}90%{opacity:0.2;}100%{transform:translateY(-10vh) scale(1);opacity:0;}}
 
-  * { margin:0; padding:0; box-sizing:border-box; }
+/* ── ENTRADA ── */
+#entrada{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0d0d2a 0%,#07070f 100%);overflow-y:auto;padding:20px;}
+.entrada-wrap{max-width:580px;width:100%;padding:20px 0;}
+.entrada-logo{text-align:center;margin-bottom:24px;}
+.entrada-logo h1{font-size:32px;font-weight:900;background:linear-gradient(135deg,var(--gold),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.entrada-logo p{color:var(--muted);font-size:14px;margin-top:6px;}
 
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: var(--dark);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* Tarjetas de negocio */
+.seccion-titulo{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin:20px 0 10px;}
+.negocios-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;}
+.negocio-card{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;}
+.negocio-card:hover{border-color:var(--gold);transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,215,0,0.1);}
+.negocio-card.activo{border-color:var(--gold);background:rgba(255,215,0,0.06);}
+.negocio-card.propio{border-color:rgba(255,107,53,0.4);}
+.negocio-card.propio.activo{border-color:var(--orange);background:rgba(255,107,53,0.08);}
+.nc-emoji{font-size:24px;flex-shrink:0;}
+.nc-info{flex:1;min-width:0;}
+.nc-nombre{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nc-tipo{font-size:11px;color:var(--muted);margin-top:2px;}
+.badge-propio{background:rgba(255,107,53,0.2);color:var(--orange);font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;letter-spacing:0.5px;}
 
-  /* ── PARTÍCULAS DE FONDO ── */
-  #particles {
-    position: fixed; top:0; left:0; width:100%; height:100%;
-    pointer-events:none; z-index:0; overflow:hidden;
-  }
-  .particle {
-    position:absolute; border-radius:50%;
-    background: radial-gradient(circle, rgba(255,215,0,0.3), transparent);
-    animation: float linear infinite;
-  }
-  @keyframes float {
-    0% { transform: translateY(100vh) scale(0); opacity:0; }
-    10% { opacity:1; }
-    90% { opacity:0.3; }
-    100% { transform: translateY(-10vh) scale(1); opacity:0; }
-  }
+/* Nichos genéricos */
+.nichos-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:4px;scrollbar-width:none;}
+.nichos-scroll::-webkit-scrollbar{display:none;}
+.nicho-pill{flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:7px 14px;cursor:pointer;font-size:12px;transition:all 0.2s;white-space:nowrap;}
+.nicho-pill:hover,.nicho-pill.activo{border-color:var(--gold);color:var(--gold);}
 
-  /* ── PANTALLA DE ENTRADA ── */
-  #entrada {
-    position:fixed; inset:0; z-index:100;
-    display:flex; align-items:center; justify-content:center;
-    background: radial-gradient(ellipse at center, #0d0d2a 0%, #07070f 100%);
-  }
-  .entrada-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 48px 40px;
-    max-width: 500px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 0 80px rgba(255,215,0,0.08);
-  }
-  .logo-aria {
-    font-size: 64px;
-    margin-bottom: 16px;
-    filter: drop-shadow(0 0 20px rgba(255,215,0,0.5));
-  }
-  .entrada-card h1 {
-    font-size: 28px;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--gold), var(--orange));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 8px;
-  }
-  .entrada-card p {
-    color: var(--muted);
-    font-size: 15px;
-    margin-bottom: 32px;
-    line-height: 1.6;
-  }
-  .entrada-card input {
-    width: 100%;
-    background: var(--card2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    color: var(--text);
-    font-size: 16px;
-    margin-bottom: 16px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .entrada-card input:focus { border-color: var(--gold); }
-  .btn-entrar {
-    width: 100%;
-    background: linear-gradient(135deg, var(--gold), var(--orange));
-    color: #000;
-    border: none;
-    border-radius: 12px;
-    padding: 16px;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .btn-entrar:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(255,215,0,0.3); }
-  .modo-selector {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .modo-btn {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--card2);
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 13px;
-    transition: all 0.2s;
-  }
-  .modo-btn.activo {
-    border-color: var(--gold);
-    color: var(--gold);
-    background: rgba(255,215,0,0.05);
-  }
+/* Formulario */
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:16px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.form-input{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:13px;outline:none;width:100%;transition:border-color 0.2s;}
+.form-input:focus{border-color:var(--gold);}
+.form-input::placeholder{color:var(--muted);}
 
-  /* ── SALA PRINCIPAL ── */
-  #sala { display:none; position:relative; z-index:1; min-height:100vh; }
+/* Modo */
+.modo-row{display:flex;gap:8px;margin-bottom:12px;}
+.modo-btn{flex:1;padding:9px;border:1px solid var(--border);border-radius:10px;background:var(--card2);color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;transition:all 0.2s;}
+.modo-btn.activo{border-color:var(--gold);color:var(--gold);background:rgba(255,215,0,0.05);}
 
-  /* Header */
-  .sala-header {
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 16px 24px;
-    background: rgba(13,13,26,0.9);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    position: sticky; top:0; z-index:50;
-  }
-  .sala-header-left { display:flex; align-items:center; gap:12px; }
-  .live-badge {
-    background: var(--red);
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    display: flex; align-items:center; gap:4px;
-    animation: pulse-badge 2s infinite;
-  }
-  @keyframes pulse-badge {
-    0%,100% { opacity:1; }
-    50% { opacity:0.6; }
-  }
-  .dot-live { width:6px; height:6px; background:#fff; border-radius:50%; }
-  .sala-title { font-size:15px; font-weight:600; }
-  .sala-subtitle { font-size:12px; color:var(--muted); }
-  .users-online {
-    display:flex; align-items:center; gap:6px;
-    color:var(--green); font-size:13px;
-  }
-  .dot-green { width:8px; height:8px; background:var(--green); border-radius:50%; box-shadow:0 0 8px var(--green); }
+.btn-entrar{width:100%;background:linear-gradient(135deg,var(--gold),var(--orange));color:#000;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;transition:all 0.2s;margin-top:4px;}
+.btn-entrar:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(255,215,0,0.3);}
 
-  /* Layout principal */
-  .sala-layout {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 0;
-    height: calc(100vh - 65px);
-  }
-  @media(max-width:768px) {
-    .sala-layout { grid-template-columns:1fr; }
-    .panel-chat { display:none; }
-  }
+/* ── SALA ── */
+#sala{display:none;position:relative;z-index:1;height:100vh;flex-direction:column;}
+.sala-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(13,13,26,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);flex-shrink:0;}
+.live-badge{background:var(--red);color:#fff;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;display:flex;align-items:center;gap:4px;animation:pulse-b 2s infinite;}
+@keyframes pulse-b{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.dot-live{width:5px;height:5px;background:#fff;border-radius:50%;}
+.header-negocio{font-size:14px;font-weight:700;}
+.header-sub{font-size:11px;color:var(--muted);}
+.header-right{display:flex;align-items:center;gap:12px;}
+.online-badge{display:flex;align-items:center;gap:5px;color:var(--green);font-size:12px;}
+.dot-green{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 6px var(--green);}
+.btn-cambiar{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:6px 12px;color:var(--muted);font-size:11px;cursor:pointer;transition:all 0.2s;}
+.btn-cambiar:hover{border-color:var(--gold);color:var(--gold);}
 
-  /* ── PANEL AVATAR ── */
-  .panel-avatar {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(ellipse at center, #0a0a1f 0%, var(--dark) 100%);
-    overflow: hidden;
-  }
+/* Layout */
+.sala-body{display:grid;grid-template-columns:1fr 360px;flex:1;overflow:hidden;}
+@media(max-width:768px){.sala-body{grid-template-columns:1fr;}.panel-chat{display:none;}}
 
-  /* Círculos de fondo animados */
-  .avatar-bg-ring {
-    position:absolute;
-    border-radius:50%;
-    border: 1px solid rgba(255,215,0,0.05);
-    animation: expand 4s ease-in-out infinite;
-  }
-  .avatar-bg-ring:nth-child(1) { width:300px; height:300px; animation-delay:0s; }
-  .avatar-bg-ring:nth-child(2) { width:450px; height:450px; animation-delay:1s; }
-  .avatar-bg-ring:nth-child(3) { width:600px; height:600px; animation-delay:2s; }
-  @keyframes expand {
-    0%,100% { transform:scale(1); opacity:0.5; }
-    50% { transform:scale(1.05); opacity:1; }
-  }
+/* Panel avatar */
+.panel-avatar{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0a0a1f 0%,var(--dark) 100%);overflow:hidden;}
+.ring{position:absolute;border-radius:50%;border:1px solid rgba(255,215,0,0.04);animation:ring-pulse 4s ease-in-out infinite;}
+.ring:nth-child(1){width:280px;height:280px;}
+.ring:nth-child(2){width:420px;height:420px;animation-delay:1.3s;}
+.ring:nth-child(3){width:560px;height:560px;animation-delay:2.6s;}
+@keyframes ring-pulse{0%,100%{transform:scale(1);opacity:0.4;}50%{transform:scale(1.04);opacity:0.8;}}
 
-  /* Avatar container */
-  .avatar-container {
-    position: relative;
-    width: 320px;
-    height: 320px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 3px solid var(--gold);
-    box-shadow: 0 0 60px rgba(255,215,0,0.2), 0 0 120px rgba(255,215,0,0.1);
-    transition: box-shadow 0.3s;
-    z-index:2;
-  }
-  .avatar-container.hablando {
-    box-shadow: 0 0 80px rgba(255,165,0,0.6), 0 0 160px rgba(255,165,0,0.3);
-    border-color: var(--orange);
-    animation: avatar-pulse 0.5s ease-in-out infinite alternate;
-  }
-  @keyframes avatar-pulse {
-    from { box-shadow: 0 0 60px rgba(255,165,0,0.5), 0 0 120px rgba(255,165,0,0.2); }
-    to   { box-shadow: 0 0 100px rgba(255,165,0,0.8), 0 0 200px rgba(255,165,0,0.4); }
-  }
+.avatar-wrap{position:relative;z-index:2;text-align:center;}
+.avatar-circle{width:280px;height:280px;border-radius:50%;overflow:hidden;border:3px solid var(--gold);box-shadow:0 0 50px rgba(255,215,0,0.15);transition:all 0.3s;margin:0 auto;}
+.avatar-circle.hablando{box-shadow:0 0 80px rgba(255,165,0,0.6);border-color:var(--orange);animation:av-pulse 0.5s ease-in-out infinite alternate;}
+@keyframes av-pulse{from{box-shadow:0 0 50px rgba(255,165,0,0.4);}to{box-shadow:0 0 100px rgba(255,165,0,0.8);}}
+.avatar-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#1a1a3e,#07070f);font-size:72px;}
+#avatarVideo{width:100%;height:100%;object-fit:cover;display:none;}
 
-  #avatarVideo {
-    width:100%; height:100%;
-    object-fit:cover;
-    background: #000;
-  }
-  .avatar-fallback {
-    width:100%; height:100%;
-    display:flex; align-items:center; justify-content:center;
-    background: radial-gradient(circle, #1a1a3e, #07070f);
-    font-size: 80px;
-  }
+.aria-status-row{display:flex;align-items:center;gap:8px;margin-top:20px;justify-content:center;}
+.status-dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.status-label{font-size:13px;color:var(--gold);font-weight:500;}
 
-  /* Status de ARIA */
-  .aria-status {
-    position: absolute;
-    bottom: -40px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-    z-index:3;
-  }
-  .status-dot {
-    width:10px; height:10px; border-radius:50%;
-    background: var(--green);
-    box-shadow: 0 0 10px var(--green);
-    animation: blink 1.5s infinite;
-  }
-  @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
-  .status-text { font-size:14px; color:var(--gold); font-weight:500; }
+/* Negocio actual tag */
+.negocio-tag{position:absolute;top:16px;left:16px;background:rgba(0,0,0,0.7);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;backdrop-filter:blur(10px);display:flex;align-items:center;gap:6px;}
+.alto-valor-banner{position:absolute;top:16px;right:16px;background:linear-gradient(135deg,rgba(255,107,53,0.9),rgba(200,0,0,0.8));border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;color:#fff;display:none;animation:shake 0.4s ease;}
+.alto-valor-banner.visible{display:block;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-4px);}75%{transform:translateX(4px);}}
 
-  /* Subtítulos en tiempo real */
-  .subtitulos {
-    position: absolute;
-    bottom: 24px;
-    left: 24px; right: 24px;
-    text-align: center;
-    z-index:5;
-  }
-  .subtitulo-texto {
-    display: inline-block;
-    background: rgba(0,0,0,0.85);
-    color: #fff;
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-size: 16px;
-    line-height: 1.5;
-    max-width: 600px;
-    border: 1px solid rgba(255,215,0,0.2);
-    backdrop-filter: blur(10px);
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s;
-  }
-  .subtitulo-texto.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Demo en curso */
+.demo-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(7,7,15,0.95),transparent);padding:20px;z-index:5;}
+.demo-pasos-mini{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.demo-paso-mini{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 12px;font-size:11px;display:flex;align-items:center;gap:4px;transition:all 0.3s;}
+.demo-paso-mini.activo{background:rgba(255,215,0,0.15);border-color:var(--gold);color:var(--gold);}
+.demo-paso-mini.ok{background:rgba(0,255,136,0.1);border-color:var(--green);color:var(--green);}
+.progress-bar-wrap{background:rgba(255,255,255,0.05);border-radius:10px;height:3px;margin-top:12px;overflow:hidden;}
+.progress-bar-inner{height:100%;background:linear-gradient(90deg,var(--gold),var(--orange));border-radius:10px;transition:width 1.5s ease;width:0%;}
 
-  /* Nombre visitante */
-  .visitante-tag {
-    position:absolute; top:24px; left:24px;
-    background:rgba(0,0,0,0.7); border:1px solid var(--border);
-    border-radius:20px; padding:6px 14px;
-    font-size:13px; color:var(--gold);
-    backdrop-filter:blur(10px);
-    z-index:5;
-  }
+/* Subtítulo */
+.subtitulo{position:absolute;bottom:80px;left:20px;right:20px;text-align:center;z-index:6;pointer-events:none;}
+.subtitulo-texto{display:inline-block;background:rgba(0,0,0,0.85);color:#fff;padding:8px 18px;border-radius:10px;font-size:14px;line-height:1.5;max-width:500px;border:1px solid rgba(255,215,0,0.15);backdrop-filter:blur(10px);opacity:0;transform:translateY(8px);transition:all 0.3s;}
+.subtitulo-texto.visible{opacity:1;transform:translateY(0);}
 
-  /* Indicador alto valor */
-  .alto-valor-banner {
-    position:absolute; top:24px; right:24px;
-    background:linear-gradient(135deg,rgba(255,107,53,0.9),rgba(255,0,0,0.8));
-    border-radius:12px; padding:10px 16px;
-    font-size:13px; font-weight:700; color:#fff;
-    display:none; z-index:5;
-    animation: shake 0.5s ease;
-  }
-  .alto-valor-banner.visible { display:block; }
-  @keyframes shake {
-    0%,100%{transform:translateX(0);}
-    25%{transform:translateX(-4px);}
-    75%{transform:translateX(4px);}
-  }
+/* Panel chat */
+.panel-chat{background:var(--card);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.chat-header{padding:16px 18px;border-bottom:1px solid var(--border);background:var(--card2);flex-shrink:0;}
+.chat-header h3{font-size:14px;font-weight:700;margin-bottom:3px;}
+.chat-header p{font-size:11px;color:var(--muted);}
 
-  /* ── PANEL CHAT ── */
-  .panel-chat {
-    background: var(--card);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+/* Tabs */
+.chat-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.chat-tab{flex:1;padding:10px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--muted);border-bottom:2px solid transparent;transition:all 0.2s;}
+.chat-tab.activo{color:var(--gold);border-bottom-color:var(--gold);}
 
-  .chat-header {
-    padding: 20px;
-    border-bottom: 1px solid var(--border);
-    background: var(--card2);
-  }
-  .chat-header h3 { font-size:16px; font-weight:600; margin-bottom:4px; }
-  .chat-header p { font-size:12px; color:var(--muted); }
+/* Info negocio tab */
+#tabInfo{flex:1;overflow-y:auto;padding:16px;display:none;}
+#tabInfo.activo{display:block;}
+.info-modulo{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;font-size:12px;display:flex;align-items:flex-start;gap:8px;}
+.info-modulo-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;}
+.info-roi{background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:12px;margin-bottom:8px;font-size:12px;}
+.info-roi span{color:var(--green);font-weight:700;}
+.info-precio{background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:12px;font-size:12px;}
+.info-precio span{color:var(--gold);font-weight:700;}
+.info-section-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;margin:12px 0 6px;}
 
-  .chat-messages {
-    flex:1; overflow-y:auto; padding:16px;
-    display:flex; flex-direction:column; gap:12px;
-    scrollbar-width:thin; scrollbar-color:var(--border) transparent;
-  }
+/* Chat tab */
+.chat-messages{flex:1;overflow-y:auto;padding:14px;display:none;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.chat-messages.activo{display:flex;}
+.msg{max-width:92%;animation:msg-in 0.3s ease;}
+@keyframes msg-in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.msg.usuario{align-self:flex-end;}
+.msg.aria{align-self:flex-start;}
+.msg-burbuja{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;}
+.msg.usuario .msg-burbuja{background:linear-gradient(135deg,var(--gold),var(--orange));color:#000;font-weight:500;border-bottom-right-radius:3px;}
+.msg.aria .msg-burbuja{background:var(--card2);border:1px solid var(--border);border-bottom-left-radius:3px;}
+.msg-meta{font-size:10px;color:var(--muted);margin-top:3px;}
+.msg.usuario .msg-meta{text-align:right;}
+.alto-valor-chip{background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);border-radius:20px;padding:5px 12px;font-size:11px;color:var(--orange);align-self:center;display:flex;align-items:center;gap:5px;}
+.typing{display:flex;gap:4px;align-items:center;padding:10px 14px;background:var(--card2);border:1px solid var(--border);border-radius:14px;border-bottom-left-radius:3px;align-self:flex-start;}
+.typing span{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:typ 1.2s ease infinite;}
+.typing span:nth-child(2){animation-delay:0.2s;}.typing span:nth-child(3){animation-delay:0.4s;}
+@keyframes typ{0%,80%,100%{transform:scale(0.5);opacity:0.3;}40%{transform:scale(1);opacity:1;}}
 
-  .msg {
-    max-width:90%;
-    animation: msg-in 0.3s ease;
-  }
-  @keyframes msg-in {
-    from { opacity:0; transform:translateY(8px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-  .msg.usuario { align-self:flex-end; }
-  .msg.aria { align-self:flex-start; }
+/* Input */
+.chat-input-wrap{padding:14px;border-top:1px solid var(--border);background:var(--card2);flex-shrink:0;}
+.input-row{display:flex;gap:8px;margin-bottom:8px;}
+.chat-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;resize:none;max-height:80px;transition:border-color 0.2s;}
+.chat-input:focus{border-color:var(--gold);}
+.btn-send{background:linear-gradient(135deg,var(--gold),var(--orange));color:#000;border:none;border-radius:10px;width:40px;height:40px;cursor:pointer;font-size:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform 0.2s;}
+.btn-send:hover{transform:scale(1.1);}
+.btn-voz{width:100%;padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;font-weight:600;}
+.btn-voz:hover{border-color:var(--gold);color:var(--gold);}
+.btn-voz.grabando{border-color:var(--red);background:rgba(255,68,102,0.08);color:var(--red);animation:grab-p 1s infinite;}
+@keyframes grab-p{0%,100%{box-shadow:0 0 0 0 rgba(255,68,102,0.3);}50%{box-shadow:0 0 0 6px rgba(255,68,102,0);}}
+.wave{display:flex;align-items:center;gap:2px;height:16px;}
+.wave-b{width:3px;border-radius:2px;background:var(--red);animation:wv 0.7s ease infinite;}
+.wave-b:nth-child(1){height:5px;}.wave-b:nth-child(2){height:10px;animation-delay:.1s;}.wave-b:nth-child(3){height:15px;animation-delay:.2s;}.wave-b:nth-child(4){height:11px;animation-delay:.3s;}.wave-b:nth-child(5){height:7px;animation-delay:.4s;}
+@keyframes wv{0%,100%{transform:scaleY(0.5);}50%{transform:scaleY(1);}}
 
-  .msg-burbuja {
-    padding: 12px 16px;
-    border-radius: 16px;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  .msg.usuario .msg-burbuja {
-    background: linear-gradient(135deg, var(--gold), var(--orange));
-    color: #000;
-    border-bottom-right-radius: 4px;
-    font-weight: 500;
-  }
-  .msg.aria .msg-burbuja {
-    background: var(--card2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-bottom-left-radius: 4px;
-  }
-  .msg-meta {
-    font-size:11px; color:var(--muted);
-    margin-top:4px;
-    display:flex; align-items:center; gap:4px;
-  }
-  .msg.usuario .msg-meta { justify-content:flex-end; }
+/* Botón demo */
+.btn-demo{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(0,255,136,0.3);background:rgba(0,255,136,0.06);color:#86efac;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;transition:all 0.2s;}
+.btn-demo:hover{background:rgba(0,255,136,0.12);}
 
-  /* Alto valor en chat */
-  .alto-valor-msg {
-    background: linear-gradient(135deg,rgba(255,107,53,0.15),rgba(255,0,0,0.1));
-    border: 1px solid rgba(255,107,53,0.4);
-    border-radius:12px; padding:10px 14px;
-    font-size:12px; color:var(--orange);
-    display:flex; align-items:center; gap:8px;
-    align-self:center; margin:4px 0;
-  }
+/* Alerta inversor */
+#alertaInv{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+#alertaInv.show{display:flex;}
+.alerta-box{background:linear-gradient(135deg,#1a0808,#0f0f1a);border:2px solid var(--orange);border-radius:20px;padding:36px;max-width:440px;text-align:center;box-shadow:0 0 80px rgba(255,107,53,0.3);animation:alerta-in 0.4s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes alerta-in{from{transform:scale(0.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+.alerta-box h2{color:var(--orange);font-size:22px;margin:12px 0 8px;}
+.alerta-box p{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:20px;}
+.alerta-btns{display:flex;gap:10px;}
+.btn-tomar{flex:1;background:linear-gradient(135deg,var(--orange),#ff0044);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer;font-size:14px;}
+.btn-dejar{flex:1;background:var(--card2);color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;font-size:14px;}
 
-  /* Área de input */
-  .chat-input-area {
-    padding:16px;
-    border-top:1px solid var(--border);
-    background:var(--card2);
-  }
-  .input-row {
-    display:flex; gap:8px;
-    margin-bottom:10px;
-  }
-  .input-texto {
-    flex:1;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    color: var(--text);
-    font-size:14px;
-    outline:none;
-    transition:border-color 0.2s;
-    resize:none;
-    max-height:100px;
-  }
-  .input-texto:focus { border-color:var(--gold); }
-  .btn-enviar {
-    background: linear-gradient(135deg, var(--gold), var(--orange));
-    color: #000;
-    border: none;
-    border-radius: 12px;
-    width: 44px; height: 44px;
-    cursor: pointer;
-    font-size: 18px;
-    display:flex; align-items:center; justify-content:center;
-    flex-shrink:0;
-    transition:transform 0.2s;
-  }
-  .btn-enviar:hover { transform:scale(1.1); }
-
-  /* Botón de voz */
-  .btn-voz {
-    width: 100%;
-    padding: 14px;
-    border-radius: 12px;
-    border: 2px solid var(--border);
-    background: var(--card);
-    color: var(--text);
-    font-size:14px;
-    cursor:pointer;
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    transition: all 0.2s;
-    font-weight:500;
-  }
-  .btn-voz:hover { border-color:var(--gold); color:var(--gold); }
-  .btn-voz.grabando {
-    border-color:var(--red);
-    background:rgba(255,68,102,0.1);
-    color:var(--red);
-    animation:grab-pulse 1s infinite;
-  }
-  @keyframes grab-pulse {
-    0%,100%{box-shadow:0 0 0 0 rgba(255,68,102,0.4);}
-    50%{box-shadow:0 0 0 8px rgba(255,68,102,0);}
-  }
-
-  /* Onda de audio */
-  .audio-wave {
-    display:flex; align-items:center; gap:3px; height:20px;
-  }
-  .wave-bar {
-    width:3px; border-radius:2px;
-    background:var(--red);
-    animation:wave-anim 0.8s ease-in-out infinite;
-  }
-  .wave-bar:nth-child(1){height:6px;animation-delay:0s;}
-  .wave-bar:nth-child(2){height:12px;animation-delay:0.1s;}
-  .wave-bar:nth-child(3){height:18px;animation-delay:0.2s;}
-  .wave-bar:nth-child(4){height:14px;animation-delay:0.3s;}
-  .wave-bar:nth-child(5){height:8px;animation-delay:0.4s;}
-  .wave-bar:nth-child(6){height:16px;animation-delay:0.5s;}
-  @keyframes wave-anim {
-    0%,100%{transform:scaleY(0.5);}
-    50%{transform:scaleY(1);}
-  }
-
-  /* Spinner */
-  .spin {
-    width:18px;height:18px;
-    border:2px solid rgba(255,215,0,0.3);
-    border-top-color:var(--gold);
-    border-radius:50%;
-    animation:spin 0.8s linear infinite;
-    flex-shrink:0;
-  }
-  @keyframes spin{to{transform:rotate(360deg);}}
-
-  /* Typing indicator */
-  .typing {
-    display:flex; gap:4px; align-items:center; padding:12px 16px;
-    background:var(--card2); border:1px solid var(--border);
-    border-radius:16px; border-bottom-left-radius:4px;
-    align-self:flex-start;
-  }
-  .typing span {
-    width:6px;height:6px;background:var(--muted);border-radius:50%;
-    animation:typing 1.2s ease-in-out infinite;
-  }
-  .typing span:nth-child(2){animation-delay:0.2s;}
-  .typing span:nth-child(3){animation-delay:0.4s;}
-  @keyframes typing{0%,80%,100%{transform:scale(0.6);opacity:0.4;}40%{transform:scale(1);opacity:1;}}
-
-  /* Toast */
-  #toast {
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-    background:var(--card2); border:1px solid var(--border);
-    border-radius:12px; padding:12px 24px;
-    font-size:14px; color:var(--text);
-    z-index:999; opacity:0; transition:opacity 0.3s;
-    pointer-events:none; white-space:nowrap;
-  }
-  #toast.show { opacity:1; }
-  #toast.error { border-color:var(--red); color:var(--red); }
-  #toast.success { border-color:var(--green); color:var(--green); }
-
-  /* ALERTA INVERSOR (overlay) */
-  #alertaInversor {
-    position:fixed; inset:0; z-index:200;
-    background:rgba(0,0,0,0.85);
-    display:none; align-items:center; justify-content:center;
-    backdrop-filter:blur(10px);
-  }
-  #alertaInversor.show { display:flex; }
-  .alerta-card {
-    background:linear-gradient(135deg, #1a0808, #0f0f1a);
-    border:2px solid var(--orange);
-    border-radius:24px;
-    padding:40px;
-    max-width:480px;
-    text-align:center;
-    box-shadow:0 0 100px rgba(255,107,53,0.4);
-    animation:alerta-in 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
-  }
-  @keyframes alerta-in {
-    from{transform:scale(0.5) rotate(-5deg);opacity:0;}
-    to{transform:scale(1) rotate(0);opacity:1;}
-  }
-  .alerta-icon { font-size:64px; margin-bottom:16px; }
-  .alerta-card h2 { font-size:24px; color:var(--orange); margin-bottom:8px; }
-  .alerta-card p { color:var(--muted); line-height:1.6; margin-bottom:24px; }
-  .alerta-btns { display:flex; gap:12px; }
-  .btn-tomar { flex:1; background:linear-gradient(135deg,var(--orange),#ff0044); color:#fff; border:none; border-radius:12px; padding:14px; font-size:16px; font-weight:700; cursor:pointer; }
-  .btn-dejar { flex:1; background:var(--card2); color:var(--muted); border:1px solid var(--border); border-radius:12px; padding:14px; font-size:16px; cursor:pointer; }
-
-  /* Scroll suave */
-  .chat-messages::-webkit-scrollbar { width:4px; }
-  .chat-messages::-webkit-scrollbar-track { background:transparent; }
-  .chat-messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+/* Toast */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 20px;font-size:13px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+#toast.show{opacity:1;}#toast.error{border-color:var(--red);color:var(--red);}#toast.success{border-color:var(--green);color:var(--green);}
 </style>
 </head>
 <body>
-
-<!-- PARTÍCULAS -->
 <div id="particles"></div>
-
-<!-- TOAST -->
 <div id="toast"></div>
 
 <!-- ALERTA INVERSOR -->
-<div id="alertaInversor">
-  <div class="alerta-card">
-    <div class="alerta-icon">🔥</div>
+<div id="alertaInv">
+  <div class="alerta-box">
+    <div style="font-size:48px;">🔥</div>
     <h2 id="alertaTitulo">PREGUNTA DE ALTO VALOR</h2>
-    <p id="alertaDescripcion">El visitante ha preguntado algo crítico. ARIA está respondiendo, pero puedes tomar el control.</p>
+    <p id="alertaDesc">El visitante ha preguntado algo crítico. ARIA responde, pero puedes tomar el control ahora.</p>
     <div class="alerta-btns">
       <button class="btn-tomar" onclick="tomarControl()">⚡ TOMAR CONTROL</button>
-      <button class="btn-dejar" onclick="cerrarAlerta()">Dejar a ARIA</button>
+      <button class="btn-dejar" onclick="document.getElementById('alertaInv').classList.remove('show')">Dejar a ARIA</button>
     </div>
   </div>
 </div>
 
-<!-- ── PANTALLA DE ENTRADA ── -->
+<!-- ── PANTALLA ENTRADA ── -->
 <div id="entrada">
-  <div class="entrada-card">
-    <div class="logo-aria">🤖</div>
-    <h1>ARIA LIVE ROOM</h1>
-    <p>Habla directamente con ARIA — la IA de David Pérez.<br>Haz cualquier pregunta, en cualquier momento.</p>
-
-    <input type="text" id="inputNombre" placeholder="Tu nombre" autocomplete="off" />
-
-    <div class="modo-selector">
-      <button class="modo-btn activo" onclick="setModo('prospecto',this)">💼 Soy prospecto</button>
-      <button class="modo-btn" onclick="setModo('investor',this)">💰 Soy inversor</button>
+  <div class="entrada-wrap">
+    <div class="entrada-logo">
+      <div style="font-size:52px;filter:drop-shadow(0 0 16px rgba(255,215,0,0.4));">🤖</div>
+      <h1>ARIA MAESTRO</h1>
+      <p>La IA de David Pérez — disponible 24/7 para explicar cualquier negocio</p>
     </div>
 
-    <button class="btn-entrar" onclick="entrar()">
-      Entrar a la sala →
-    </button>
+    <!-- Negocios propios de David -->
+    <div class="seccion-titulo">🏢 Negocios de David — explicación completa</div>
+    <div class="negocios-grid" id="negociosGrid">
+      <div class="negocio-card propio" onclick="seleccionarNegocio('flowie',this)">
+        <div class="nc-emoji">⚡</div>
+        <div class="nc-info">
+          <div class="nc-nombre">Flowie</div>
+          <div class="nc-tipo">CRM + Constructor IA</div>
+        </div>
+        <div class="badge-propio">DAVID</div>
+      </div>
+      <div class="negocio-card propio" onclick="seleccionarNegocio('dentalia',this)">
+        <div class="nc-emoji">🦷</div>
+        <div class="nc-info">
+          <div class="nc-nombre">DentalIA PRO</div>
+          <div class="nc-tipo">Agencia IA Dental</div>
+        </div>
+        <div class="badge-propio">DAVID</div>
+      </div>
+      <div class="negocio-card propio" onclick="seleccionarNegocio('nexo',this)">
+        <div class="nc-emoji">🎓</div>
+        <div class="nc-info">
+          <div class="nc-nombre">Nexo 2050</div>
+          <div class="nc-tipo">Educación Gamificada IA</div>
+        </div>
+        <div class="badge-propio">DAVID</div>
+      </div>
+      <div class="negocio-card propio" onclick="seleccionarNegocio('renacer',this)">
+        <div class="nc-emoji">🧠</div>
+        <div class="nc-info">
+          <div class="nc-nombre">RENACER</div>
+          <div class="nc-tipo">Bienestar con IA</div>
+        </div>
+        <div class="badge-propio">DAVID</div>
+      </div>
+      <div class="negocio-card propio" onclick="seleccionarNegocio('agencia_academy',this)" style="grid-column:span 2;">
+        <div class="nc-emoji">🚀</div>
+        <div class="nc-info">
+          <div class="nc-nombre">AgencIA Academy</div>
+          <div class="nc-tipo">Academia para lanzar agencias de IA</div>
+        </div>
+        <div class="badge-propio">DAVID</div>
+      </div>
+    </div>
+
+    <!-- Nichos genéricos -->
+    <div class="seccion-titulo">🌍 O construye demo para cualquier nicho</div>
+    <div class="nichos-scroll" id="nichosScroll">
+      <div class="nicho-pill" onclick="seleccionarNicho('dental',this)">🦷 Dental</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('medico',this)">⚕️ Médico</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('inmobiliaria',this)">🏠 Inmobiliaria</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('restaurante',this)">🍽️ Restaurante</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('ecommerce',this)">🛒 E-commerce</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('educacion',this)">📚 Educación</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('legal',this)">⚖️ Legal</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('financiero',this)">💰 Financiero</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('fitness',this)">💪 Fitness</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('seguros',this)">🛡️ Seguros</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('hotel',this)">🏨 Hotel</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('clinica_estetica',this)">✨ Estética</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('psicologia',this)">🧠 Psicología</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('veterinaria',this)">🐾 Veterinaria</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('academia',this)">🎓 Academia</div>
+      <div class="nicho-pill" onclick="seleccionarNicho('otro',this)">🚀 Otro nicho</div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="form-card" id="formCard">
+      <div class="seccion-titulo" style="margin-top:0;">Tu información</div>
+      <div class="form-grid">
+        <input class="form-input" id="inputNombre" placeholder="Tu nombre *" />
+        <input class="form-input" id="inputNegocio" placeholder="Nombre del negocio (si aplica)" />
+        <input class="form-input" id="inputCiudad" placeholder="Ciudad" />
+        <input class="form-input" id="inputSector" placeholder="Sector / especialidad" />
+      </div>
+      <div class="modo-row">
+        <button class="modo-btn activo" onclick="setModo('prospecto',this)">💼 Soy cliente/prospecto</button>
+        <button class="modo-btn" onclick="setModo('investor',this)">💰 Soy inversor</button>
+      </div>
+      <button class="btn-entrar" onclick="entrar()">Entrar y hablar con ARIA →</button>
+    </div>
   </div>
 </div>
 
-<!-- ── SALA PRINCIPAL ── -->
-<div id="sala">
+<!-- ── SALA ── -->
+<div id="sala" style="display:none;flex-direction:column;height:100vh;">
   <div class="sala-header">
-    <div class="sala-header-left">
+    <div style="display:flex;align-items:center;gap:10px;">
       <div class="live-badge"><div class="dot-live"></div>EN VIVO</div>
       <div>
-        <div class="sala-title">ARIA por DentalIA PRO</div>
-        <div class="sala-subtitle" id="headerSubtitle">Conectando...</div>
+        <div class="header-negocio" id="headerNegocio">ARIA MAESTRO</div>
+        <div class="header-sub" id="headerSub">Conectando...</div>
       </div>
     </div>
-    <div class="users-online">
-      <div class="dot-green"></div>
-      <span id="onlineCount">1 persona online</span>
+    <div class="header-right">
+      <div class="online-badge"><div class="dot-green"></div><span id="onlineCount">1 online</span></div>
+      <button class="btn-cambiar" onclick="volverEntrada()">↩ Cambiar</button>
     </div>
   </div>
 
-  <div class="sala-layout">
-    <!-- PANEL AVATAR -->
+  <div class="sala-body" style="flex:1;overflow:hidden;">
+    <!-- Panel avatar -->
     <div class="panel-avatar">
-      <div class="avatar-bg-ring"></div>
-      <div class="avatar-bg-ring"></div>
-      <div class="avatar-bg-ring"></div>
+      <div class="ring"></div><div class="ring"></div><div class="ring"></div>
 
-      <div class="visitante-tag" id="visitanteTag">👤 Cargando...</div>
+      <div class="negocio-tag" id="negocioTag">🤖 ARIA</div>
       <div class="alto-valor-banner" id="altoValorBanner">🔥 Pregunta de alto valor</div>
 
-      <div class="avatar-container" id="avatarContainer">
-        <div class="avatar-fallback" id="avatarFallback">🤖</div>
-        <video id="avatarVideo" autoplay playsinline style="display:none;"></video>
+      <div class="avatar-wrap">
+        <div class="avatar-circle" id="avatarCircle">
+          <div class="avatar-inner" id="avatarInner">🤖</div>
+          <video id="avatarVideo" autoplay playsinline></video>
+        </div>
+        <div class="aria-status-row">
+          <div class="status-dot" id="statusDot"></div>
+          <div class="status-label" id="statusLabel">ARIA lista</div>
+        </div>
       </div>
 
-      <div class="aria-status" style="position:relative;margin-top:60px;">
-        <div class="status-dot" id="statusDot"></div>
-        <div class="status-text" id="statusText">ARIA lista</div>
+      <!-- Mini pasos demo -->
+      <div class="demo-overlay" id="demoOverlay" style="display:none;">
+        <div class="demo-pasos-mini" id="demoPasosMini"></div>
+        <div class="progress-bar-wrap"><div class="progress-bar-inner" id="progressBar"></div></div>
       </div>
 
-      <div class="subtitulos">
-        <div class="subtitulo-texto" id="subtituloTexto"></div>
-      </div>
+      <div class="subtitulo"><div class="subtitulo-texto" id="subtituloTexto"></div></div>
     </div>
 
-    <!-- PANEL CHAT -->
+    <!-- Panel chat -->
     <div class="panel-chat">
       <div class="chat-header">
-        <h3>💬 Conversación con ARIA</h3>
-        <p>Escribe o usa tu voz — ARIA responde en segundos</p>
+        <h3 id="chatNegocioNombre">ARIA</h3>
+        <p id="chatNegocioDesc">Pregunta lo que quieras</p>
       </div>
-
-      <div class="chat-messages" id="chatMessages">
-        <!-- Los mensajes aparecen aquí -->
+      <div class="chat-tabs">
+        <div class="chat-tab activo" onclick="setTab('chat',this)">💬 Chat</div>
+        <div class="chat-tab" onclick="setTab('info',this)">📋 Info</div>
       </div>
-
-      <div class="chat-input-area">
+      <div class="chat-messages activo" id="tabChat"></div>
+      <div id="tabInfo"></div>
+      <div class="chat-input-wrap">
         <div class="input-row">
-          <textarea
-            class="input-texto"
-            id="inputTexto"
-            placeholder="Escribe tu pregunta..."
-            rows="1"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarTexto();}"
-          ></textarea>
-          <button class="btn-enviar" onclick="enviarTexto()" title="Enviar">➤</button>
+          <textarea class="chat-input" id="chatInput" placeholder="Pregunta lo que quieras..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarTexto();}"></textarea>
+          <button class="btn-send" onclick="enviarTexto()">➤</button>
         </div>
-        <button class="btn-voz" id="btnVoz" onclick="toggleVoz()">
-          🎙️ Mantén pulsado para hablar
-        </button>
+        <button class="btn-voz" id="btnVoz" onclick="toggleVoz()">🎙️ Mantén para hablar</button>
+        <button class="btn-demo" id="btnDemo" onclick="iniciarDemo()">🎬 Ver demo completa en vivo</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════
-//  CONFIG
-// ══════════════════════════════════════════
-const BACKEND = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaLiveRoom';
+const BACKEND = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaMaestro';
 const LIVEAVATAR_KEY = 'e1d4c768-49d4-11f1-8d28-066a7fa2e369';
 const DAVID_AVATAR_ID = '4ad5402563c94f88bcc2fd3c0b55dfc6';
 
 let estado = {
-  nombreVisitante: '',
+  negocioKey: '',
+  negocioData: {},
   modoDemo: 'prospecto',
-  sessionId: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+  nombreVisitante: '',
+  sessionId: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
   historial: [],
   grabando: false,
   procesando: false,
@@ -670,459 +385,395 @@ let estado = {
   audioActual: null,
   mediaRecorder: null,
   chunks: [],
-  avatarConectado: false,
-  // Contexto del negocio
-  contextoRoom: {
-    nombreNegocio: 'DentalIA PRO',
-    sector: 'Clínicas dentales',
-    propuestaValor: 'Agentes IA que automatizan la captación de pacientes 24/7 — el primer paciente en 48 horas garantizado',
-    roi: '3-5x en 90 días — clínicas que pasan de 20 a 80 pacientes/mes',
-    precio: 'desde 297€/mes con garantía de resultado',
-  }
+  kb: null,
+  pasos: [],
+  demoActiva: false,
 };
 
-// ══════════════════════════════════════════
-//  PARTÍCULAS
-// ══════════════════════════════════════════
-function crearParticulas() {
-  const cont = document.getElementById('particles');
-  for (let i = 0; i < 15; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    const size = Math.random() * 80 + 20;
-    p.style.cssText = `
-      width:${size}px; height:${size}px;
-      left:${Math.random()*100}%;
-      animation-duration:${Math.random()*20+15}s;
-      animation-delay:${Math.random()*10}s;
-      opacity:${Math.random()*0.3+0.05};
-    `;
-    cont.appendChild(p);
+// ── PARTÍCULAS ──
+(function(){
+  const c=document.getElementById('particles');
+  for(let i=0;i<12;i++){
+    const p=document.createElement('div'); p.className='particle';
+    const s=Math.random()*60+20;
+    p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;animation-duration:${Math.random()*20+15}s;animation-delay:${Math.random()*10}s;opacity:${Math.random()*0.2+0.03};`;
+    c.appendChild(p);
   }
-}
-crearParticulas();
+})();
 
-// ══════════════════════════════════════════
-//  MODO SELECTOR
-// ══════════════════════════════════════════
-function setModo(modo, btn) {
-  estado.modoDemo = modo;
+// ── SELECCIÓN ──
+function seleccionarNegocio(key, el) {
+  estado.negocioKey = key;
+  document.querySelectorAll('.negocio-card').forEach(c => c.classList.remove('activo'));
+  document.querySelectorAll('.nicho-pill').forEach(p => p.classList.remove('activo'));
+  el.classList.add('activo');
+  // Ocultar campo negocio/ciudad para propios
+  document.getElementById('inputNegocio').placeholder = 'Nombre (opcional)';
+  document.getElementById('inputSector').value = '';
+}
+
+function seleccionarNicho(key, el) {
+  estado.negocioKey = key;
+  document.querySelectorAll('.negocio-card').forEach(c => c.classList.remove('activo'));
+  document.querySelectorAll('.nicho-pill').forEach(p => p.classList.remove('activo'));
+  el.classList.add('activo');
+  document.getElementById('inputNegocio').placeholder = 'Nombre del negocio *';
+}
+
+function setModo(m, btn) {
+  estado.modoDemo = m;
   document.querySelectorAll('.modo-btn').forEach(b => b.classList.remove('activo'));
   btn.classList.add('activo');
 }
 
-// ══════════════════════════════════════════
-//  ENTRADA A LA SALA
-// ══════════════════════════════════════════
+function setTab(tab, el) {
+  document.querySelectorAll('.chat-tab').forEach(t => t.classList.remove('activo'));
+  el.classList.add('activo');
+  document.getElementById('tabChat').className = 'chat-messages' + (tab==='chat' ? ' activo' : '');
+  document.getElementById('tabInfo').className = tab==='info' ? 'activo' : '';
+}
+
+// ── ENTRADA ──
 async function entrar() {
   const nombre = document.getElementById('inputNombre').value.trim();
-  if (!nombre) { toast('Escribe tu nombre para entrar', 'error'); return; }
+  if (!nombre) { toast('Escribe tu nombre', 'error'); return; }
+  if (!estado.negocioKey) { toast('Selecciona un negocio o nicho', 'error'); return; }
 
   estado.nombreVisitante = nombre;
-  estado.contextoRoom.modoDemo = estado.modoDemo;
-  estado.contextoRoom.nombreVisitante = nombre;
+  estado.negocioData = {
+    nombreNegocio: document.getElementById('inputNegocio').value.trim() || nombre + ' Negocio',
+    ciudad: document.getElementById('inputCiudad').value.trim() || 'España',
+    sector: document.getElementById('inputSector').value.trim(),
+    modoDemo: estado.modoDemo,
+    nombreVisitante: nombre,
+  };
 
-  // Ocultar entrada, mostrar sala
+  // Ocultar entrada
   document.getElementById('entrada').style.display = 'none';
-  document.getElementById('sala').style.display = 'block';
+  const sala = document.getElementById('sala');
+  sala.style.display = 'flex';
 
-  // Actualizar UI
-  document.getElementById('visitanteTag').textContent = `👤 ${nombre}`;
-  document.getElementById('headerSubtitle').textContent = `${nombre} — ${estado.modoDemo === 'investor' ? 'Modo Inversor' : 'Modo Prospecto'}`;
+  // Cargar info del negocio
+  setStatus('Cargando información...', false);
+  await cargarInfoNegocio();
 
-  // Mensaje de bienvenida de ARIA
-  const url = new URL(window.location.href);
-  await bienvenidaARIA(nombre, estado.modoDemo);
-
-  // Intentar conectar LiveAvatar
+  // Bienvenida
+  await bienvenida();
   conectarAvatar();
-
-  // Simular otros usuarios online
   simularOnline();
 }
 
-async function bienvenidaARIA(nombre, modo) {
-  setStatus('ARIA preparando saludo...', false);
-  const saludo = modo === 'investor'
-    ? `Hola ${nombre}, bienvenido. Soy ARIA, la inteligencia de DentalIA PRO. Estoy aquí para responderte cualquier pregunta sobre el modelo de negocio, proyecciones y oportunidad de inversión. ¿Qué quieres saber primero?`
-    : `Hola ${nombre}, soy ARIA — la asistente de DentalIA PRO. Puedes preguntarme lo que quieras sobre cómo transformamos tu clínica con inteligencia artificial. Estoy aquí en tiempo real.`;
-
-  agregarMensaje('aria', saludo);
-  await reproducirVoz(saludo);
-  mostrarSubtitulo(saludo);
-}
-
-// ══════════════════════════════════════════
-//  AVATAR LIVEAVATAR
-// ══════════════════════════════════════════
-async function conectarAvatar() {
-  try {
-    setStatus('Conectando avatar...', false);
-    const res = await fetch('https://api.liveavatar.ai/v1/sessions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${LIVEAVATAR_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ avatar_id: DAVID_AVATAR_ID, quality: 'high' })
-    });
-    if (!res.ok) throw new Error('Avatar no disponible');
-    const data = await res.json();
-
-    // Configurar WebRTC
-    const pc = new RTCPeerConnection({ iceServers: data.ice_servers || [{ urls: 'stun:stun.l.google.com:19302' }] });
-    pc.ontrack = (e) => {
-      const video = document.getElementById('avatarVideo');
-      video.srcObject = e.streams[0];
-      video.style.display = 'block';
-      document.getElementById('avatarFallback').style.display = 'none';
-      estado.avatarConectado = true;
-      setStatus('ARIA lista', true);
-    };
-    await pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: data.sdp_offer }));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    await fetch(`https://api.liveavatar.ai/v1/sessions/${data.session_id}/answer`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${LIVEAVATAR_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sdp: answer.sdp })
-    });
-
-    setStatus('ARIA lista', true);
-  } catch(e) {
-    console.warn('[AVATAR]', e);
-    setStatus('ARIA lista (modo audio)', true);
-    // Sin avatar pero funciona igualmente con voz
-  }
-}
-
-// ══════════════════════════════════════════
-//  ENVIAR TEXTO
-// ══════════════════════════════════════════
-async function enviarTexto() {
-  const input = document.getElementById('inputTexto');
-  const texto = input.value.trim();
-  if (!texto || estado.procesando) return;
-  input.value = '';
-  input.style.height = 'auto';
-  await procesarPregunta(texto);
-}
-
-// ══════════════════════════════════════════
-//  TOGGLE VOZ
-// ══════════════════════════════════════════
-async function toggleVoz() {
-  if (estado.grabando) {
-    pararGrabacion();
-  } else {
-    iniciarGrabacion();
-  }
-}
-
-async function iniciarGrabacion() {
-  if (estado.procesando || estado.hablando) return;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    estado.chunks = [];
-    estado.mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
-    estado.mediaRecorder.ondataavailable = e => { if(e.data.size > 0) estado.chunks.push(e.data); };
-    estado.mediaRecorder.onstop = procesarAudio;
-    estado.mediaRecorder.start();
-    estado.grabando = true;
-
-    const btn = document.getElementById('btnVoz');
-    btn.className = 'btn-voz grabando';
-    btn.innerHTML = `
-      <div class="audio-wave">
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-        <div class="wave-bar"></div><div class="wave-bar"></div>
-      </div>
-      Suelta para enviar
-    `;
-    setStatus('Escuchando...', true);
-  } catch(e) {
-    toast('No se puede acceder al micrófono', 'error');
-  }
-}
-
-function pararGrabacion() {
-  if (!estado.grabando) return;
-  estado.grabando = false;
-  if (estado.mediaRecorder?.state !== 'inactive') {
-    estado.mediaRecorder.stop();
-    estado.mediaRecorder.stream.getTracks().forEach(t => t.stop());
-  }
-  const btn = document.getElementById('btnVoz');
-  btn.className = 'btn-voz';
-  btn.innerHTML = '🎙️ Mantén pulsado para hablar';
-}
-
-async function procesarAudio() {
-  if (estado.chunks.length === 0) return;
-  const blob = new Blob(estado.chunks, { type: 'audio/webm' });
-  const reader = new FileReader();
-  reader.onloadend = async () => {
-    const b64 = reader.result.toString().split(',')[1];
-    await enviarAudio(b64);
-  };
-  reader.readAsDataURL(blob);
-}
-
-async function enviarAudio(audioB64) {
-  if (estado.procesando) return;
-  estado.procesando = true;
-  setStatus('Procesando tu voz...', false);
-  mostrarTyping();
-
+async function cargarInfoNegocio() {
   try {
     const res = await fetch(BACKEND, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accion: 'voz',
-        audio_b64: audioB64,
-        sessionId: estado.sessionId,
-        historial: estado.historial,
-        contextoRoom: estado.contextoRoom,
-        nombreVisitante: estado.nombreVisitante,
-        roomUrl: window.location.href
-      })
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ accion:'info', negocioKey: estado.negocioKey, negocioData: estado.negocioData, sessionId: estado.sessionId })
     });
     const data = await res.json();
-    quitarTyping();
-
-    if (!data.ok) { toast(data.error || 'Error procesando voz', 'error'); return; }
-
-    // Mostrar pregunta transcrita
-    agregarMensaje('usuario', data.pregunta);
-    // Mostrar respuesta
-    agregarMensaje('aria', data.respuesta);
-
-    // Detectar alto valor
-    if (data.alto_valor) {
-      mostrarAltoValor(data.categoria);
+    if (data.ok) {
+      estado.kb = data.kb;
+      estado.pasos = data.pasos;
+      actualizarUIConInfo(data.kb, data.pasos);
     }
+  } catch(e) { console.warn('[INFO]', e); }
+}
 
-    // Reproducir respuesta
-    await reproducirB64(data.audio_b64);
-    mostrarSubtitulo(data.respuesta);
-
-    // Actualizar historial
-    estado.historial.push({ role: 'user', content: data.pregunta });
-    estado.historial.push({ role: 'assistant', content: data.respuesta });
-    if (estado.historial.length > 24) estado.historial = estado.historial.slice(-24);
-
-  } catch(e) {
-    quitarTyping();
-    toast('Error de conexión', 'error');
-  } finally {
-    estado.procesando = false;
-    setStatus('ARIA lista', true);
+function actualizarUIConInfo(kb, pasos) {
+  if (!kb) {
+    // Nicho genérico
+    const n = estado.negocioData.nombreNegocio || 'Tu negocio';
+    document.getElementById('headerNegocio').textContent = `ARIA × ${n}`;
+    document.getElementById('headerSub').textContent = `${estado.nombreVisitante} — ${estado.modoDemo==='investor'?'Modo Inversor':'Modo Prospecto'}`;
+    document.getElementById('negocioTag').textContent = `🚀 ${n}`;
+    document.getElementById('chatNegocioNombre').textContent = n;
+    document.getElementById('chatNegocioDesc').textContent = 'Pregunta lo que quieras sobre el sistema IA';
+    document.getElementById('tabInfo').innerHTML = `<div style="padding:16px;color:var(--muted);font-size:13px;">Demo personalizada para ${n}. Inicia la demo para ver todos los detalles.</div>`;
+    return;
   }
+
+  document.getElementById('headerNegocio').textContent = `ARIA × ${kb.nombre}`;
+  document.getElementById('headerSub').textContent = `${estado.nombreVisitante} — ${estado.modoDemo==='investor'?'Modo Inversor':'Modo Prospecto'}`;
+  document.getElementById('negocioTag').textContent = `🏢 ${kb.nombre}`;
+  document.getElementById('chatNegocioNombre').textContent = kb.nombre;
+  document.getElementById('chatNegocioDesc').textContent = kb.tipo;
+
+  // Tab info
+  const modulosHTML = (kb.modulos||[]).map(m => `<div class="info-modulo"><div class="info-modulo-dot"></div><span>${m}</span></div>`).join('');
+  document.getElementById('tabInfo').innerHTML = `
+    <div style="padding:16px;overflow-y:auto;max-height:100%;">
+      <div class="info-section-title">📌 Qué es</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;">${kb.descripcion}</div>
+      <div class="info-section-title">🎯 Objetivo</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.6;margin-bottom:12px;">${kb.objetivo}</div>
+      <div class="info-section-title">🏗️ Módulos (${(kb.modulos||[]).length})</div>
+      ${modulosHTML}
+      <div class="info-roi"><span>📈 ROI:</span> ${kb.roi}</div>
+      <div class="info-precio"><span>💰 Precio:</span> ${kb.precio}</div>
+      ${kb.diferenciador ? `<div class="info-modulo" style="margin-top:8px;border-color:rgba(255,215,0,0.2);background:rgba(255,215,0,0.04);"><div class="info-modulo-dot" style="background:var(--gold);"></div><span><b>Diferenciador:</b> ${kb.diferenciador}</span></div>` : ''}
+    </div>
+  `;
+
+  // Pasos mini demo
+  if (pasos && pasos.length) {
+    const miniHTML = pasos.map(p => `<div class="demo-paso-mini" id="mini_${p.id}">${p.emoji} ${p.label}</div>`).join('');
+    document.getElementById('demoPasosMini').innerHTML = miniHTML;
+  }
+}
+
+async function bienvenida() {
+  const kb = estado.kb;
+  let texto = '';
+  if (kb) {
+    texto = estado.modoDemo === 'investor'
+      ? `Hola ${estado.nombreVisitante}. Soy ARIA, la inteligencia de ${kb.nombre}. Estoy aquí para explicarte todo sobre este negocio — su mercado, escalabilidad y retorno. ¿Por dónde quieres empezar?`
+      : `Hola ${estado.nombreVisitante}. Soy ARIA. Te voy a explicar todo sobre ${kb.nombre} — qué es, cómo funciona y qué resultados consigues. Puedes preguntarme lo que quieras o iniciar la demo completa.`;
+  } else {
+    texto = `Hola ${estado.nombreVisitante}. Soy ARIA. He analizado el sector y estoy lista para construirte el sistema de IA para ${estado.negocioData.nombreNegocio||'tu negocio'} en tiempo real. ¿Iniciamos la demo o tienes preguntas primero?`;
+  }
+  agregarMsg('aria', texto);
+  await reproducirVoz(texto);
+  setStatus('ARIA lista', true);
+}
+
+// ── DEMO COMPLETA ──
+async function iniciarDemo() {
+  if (estado.demoActiva || !estado.pasos.length) return;
+  estado.demoActiva = true;
+  document.getElementById('demoOverlay').style.display = 'block';
+  document.getElementById('btnDemo').style.display = 'none';
+
+  const intro = estado.kb
+    ? `Perfecto. Te hago la presentación completa de ${estado.kb.nombre} en vivo. Cada punto que ves en pantalla te lo explico en detalle. Observa.`
+    : `Vamos. Construyo el sistema de IA para ${estado.negocioData.nombreNegocio} paso a paso mientras te lo explico. Observa.`;
+
+  agregarMsg('aria', intro);
+  await reproducirVoz(intro);
+
+  for (let i = 0; i < estado.pasos.length; i++) {
+    const p = estado.pasos[i];
+    // Activar paso mini
+    document.querySelectorAll('.demo-paso-mini').forEach(el => el.classList.remove('activo'));
+    const miniEl = document.getElementById('mini_' + p.id);
+    if (miniEl) miniEl.classList.add('activo');
+    document.getElementById('progressBar').style.width = (p.pct - 15) + '%';
+
+    // Hablar + mostrar subtítulo
+    agregarMsg('aria', p.voz);
+    await Promise.all([
+      reproducirVoz(p.voz),
+      new Promise(r => setTimeout(r, i === 0 ? 500 : 300))
+    ]);
+
+    // Marcar ok
+    if (miniEl) { miniEl.classList.remove('activo'); miniEl.classList.add('ok'); }
+    document.getElementById('progressBar').style.width = p.pct + '%';
+    await new Promise(r => setTimeout(r, 400));
+  }
+
+  // Cierre
+  const cierre = estado.kb
+    ? `Eso es ${estado.kb.nombre} en resumen. Precio: ${estado.kb.precio}. ¿Tienes alguna pregunta o quieres que David te llame hoy mismo?`
+    : `Sistema completo construido para ${estado.negocioData.nombreNegocio}. ¿Cuándo quieres empezar?`;
+
+  agregarMsg('aria', cierre);
+  await reproducirVoz(cierre);
+  estado.demoActiva = false;
+  document.getElementById('btnDemo').textContent = '🔄 Repetir demo';
+  document.getElementById('btnDemo').style.display = 'block';
+  document.getElementById('btnDemo').onclick = () => { estado.demoActiva = false; iniciarDemo(); };
+}
+
+// ── TEXTO ──
+async function enviarTexto() {
+  const input = document.getElementById('chatInput');
+  const texto = input.value.trim();
+  if (!texto || estado.procesando) return;
+  input.value = ''; input.style.height = 'auto';
+  await procesarPregunta(texto);
 }
 
 async function procesarPregunta(pregunta) {
   if (estado.procesando) return;
   estado.procesando = true;
-  agregarMensaje('usuario', pregunta);
+  agregarMsg('usuario', pregunta);
   setStatus('ARIA pensando...', false);
   mostrarTyping();
-
   try {
     const res = await fetch(BACKEND, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        accion: 'texto',
-        pregunta,
-        sessionId: estado.sessionId,
-        historial: estado.historial,
-        contextoRoom: estado.contextoRoom,
-        nombreVisitante: estado.nombreVisitante,
-        roomUrl: window.location.href
-      })
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ accion:'texto', pregunta, sessionId: estado.sessionId, negocioKey: estado.negocioKey, negocioData: estado.negocioData, modoDemo: estado.modoDemo, nombreVisitante: estado.nombreVisitante, historial: estado.historial })
     });
     const data = await res.json();
     quitarTyping();
-
-    if (!data.ok) { toast(data.error || 'Error', 'error'); return; }
-
-    agregarMensaje('aria', data.respuesta);
+    if (!data.ok) { toast(data.error||'Error', 'error'); return; }
+    agregarMsg('aria', data.respuesta);
     if (data.alto_valor) mostrarAltoValor(data.categoria);
     await reproducirB64(data.audio_b64);
     mostrarSubtitulo(data.respuesta);
-
-    estado.historial.push({ role: 'user', content: pregunta });
-    estado.historial.push({ role: 'assistant', content: data.respuesta });
+    estado.historial.push({role:'user',content:pregunta}, {role:'assistant',content:data.respuesta});
     if (estado.historial.length > 24) estado.historial = estado.historial.slice(-24);
-
-  } catch(e) {
-    quitarTyping();
-    toast('Error de conexión', 'error');
-  } finally {
-    estado.procesando = false;
-    setStatus('ARIA lista', true);
-  }
+  } catch(e) { quitarTyping(); toast('Error de conexión','error'); }
+  finally { estado.procesando = false; setStatus('ARIA lista', true); }
 }
 
-// ══════════════════════════════════════════
-//  REPRODUCIR VOZ
-// ══════════════════════════════════════════
+// ── VOZ ──
+async function toggleVoz() {
+  if (estado.grabando) pararGrabacion(); else iniciarGrabacion();
+}
+async function iniciarGrabacion() {
+  if (estado.procesando || estado.hablando) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    estado.chunks = [];
+    estado.mediaRecorder = new MediaRecorder(stream, {mimeType:'audio/webm;codecs=opus'});
+    estado.mediaRecorder.ondataavailable = e => { if(e.data.size>0) estado.chunks.push(e.data); };
+    estado.mediaRecorder.onstop = procesarAudio;
+    estado.mediaRecorder.start();
+    estado.grabando = true;
+    const btn = document.getElementById('btnVoz');
+    btn.className = 'btn-voz grabando';
+    btn.innerHTML = '<div class="wave"><div class="wave-b"></div><div class="wave-b"></div><div class="wave-b"></div><div class="wave-b"></div><div class="wave-b"></div></div> Suelta para enviar';
+    setStatus('Escuchando...', true);
+  } catch(e) { toast('No se puede acceder al micrófono','error'); }
+}
+function pararGrabacion() {
+  if (!estado.grabando) return;
+  estado.grabando = false;
+  if (estado.mediaRecorder?.state !== 'inactive') { estado.mediaRecorder.stop(); estado.mediaRecorder.stream.getTracks().forEach(t=>t.stop()); }
+  const btn = document.getElementById('btnVoz');
+  btn.className = 'btn-voz'; btn.innerHTML = '🎙️ Mantén para hablar';
+}
+async function procesarAudio() {
+  if (!estado.chunks.length) return;
+  const blob = new Blob(estado.chunks, {type:'audio/webm'});
+  const reader = new FileReader();
+  reader.onloadend = async () => {
+    const b64 = reader.result.toString().split(',')[1];
+    estado.procesando = true;
+    setStatus('Procesando voz...', false);
+    mostrarTyping();
+    try {
+      const res = await fetch(BACKEND, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ accion:'voz', audio_b64:b64, sessionId:estado.sessionId, negocioKey:estado.negocioKey, negocioData:estado.negocioData, modoDemo:estado.modoDemo, nombreVisitante:estado.nombreVisitante, historial:estado.historial })
+      });
+      const data = await res.json();
+      quitarTyping();
+      if (!data.ok) { toast(data.error||'Error voz','error'); return; }
+      if (data.pregunta) agregarMsg('usuario', data.pregunta);
+      agregarMsg('aria', data.respuesta);
+      if (data.alto_valor) mostrarAltoValor(data.categoria);
+      await reproducirB64(data.audio_b64);
+      mostrarSubtitulo(data.respuesta);
+      estado.historial.push({role:'user',content:data.pregunta||''}, {role:'assistant',content:data.respuesta});
+      if (estado.historial.length > 24) estado.historial = estado.historial.slice(-24);
+    } catch(e) { quitarTyping(); toast('Error','error'); }
+    finally { estado.procesando = false; setStatus('ARIA lista', true); }
+  };
+  reader.readAsDataURL(blob);
+}
+
+// ── AVATAR ──
+async function conectarAvatar() {
+  try {
+    const res = await fetch('https://api.liveavatar.ai/v1/sessions', {
+      method:'POST', headers:{'Authorization':`Bearer ${LIVEAVATAR_KEY}`,'Content-Type':'application/json'},
+      body: JSON.stringify({avatar_id:DAVID_AVATAR_ID, quality:'high'})
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const pc = new RTCPeerConnection({iceServers: data.ice_servers||[{urls:'stun:stun.l.google.com:19302'}]});
+    pc.ontrack = e => {
+      const v = document.getElementById('avatarVideo');
+      v.srcObject = e.streams[0]; v.style.display = 'block';
+      document.getElementById('avatarInner').style.display = 'none';
+    };
+    await pc.setRemoteDescription(new RTCSessionDescription({type:'offer', sdp:data.sdp_offer}));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await fetch(`https://api.liveavatar.ai/v1/sessions/${data.session_id}/answer`, {
+      method:'POST', headers:{'Authorization':`Bearer ${LIVEAVATAR_KEY}`,'Content-Type':'application/json'},
+      body: JSON.stringify({sdp:answer.sdp})
+    });
+  } catch(e) { console.warn('[AVATAR]', e); }
+}
+
+// ── TTS ──
 async function reproducirVoz(texto) {
   try {
-    const res = await fetch(BACKEND, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accion: 'tts', texto, sessionId: estado.sessionId })
-    });
+    const res = await fetch(BACKEND, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accion:'tts',texto,sessionId:estado.sessionId})});
     const data = await res.json();
     if (data.audio_b64) await reproducirB64(data.audio_b64);
-  } catch(e) { console.warn('[TTS]', e); }
+  } catch(e) {}
 }
-
 async function reproducirB64(b64) {
   if (!b64) return;
   return new Promise(resolve => {
     if (estado.audioActual) { estado.audioActual.pause(); estado.audioActual = null; }
-    const bytes = atob(b64);
-    const arr = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-    const blob = new Blob([arr], { type: 'audio/mpeg' });
+    const bytes = atob(b64); const arr = new Uint8Array(bytes.length);
+    for (let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+    const blob = new Blob([arr],{type:'audio/mpeg'});
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    estado.audioActual = audio;
-    estado.hablando = true;
-
-    document.getElementById('avatarContainer').classList.add('hablando');
+    estado.audioActual = audio; estado.hablando = true;
+    document.getElementById('avatarCircle').classList.add('hablando');
     setStatus('ARIA hablando...', false);
-
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-      estado.hablando = false;
-      estado.audioActual = null;
-      document.getElementById('avatarContainer').classList.remove('hablando');
-      setStatus('ARIA lista', true);
-      resolve();
-    };
-    audio.onerror = () => { resolve(); };
+    audio.onended = () => { URL.revokeObjectURL(url); estado.hablando=false; estado.audioActual=null; document.getElementById('avatarCircle').classList.remove('hablando'); setStatus('ARIA lista',true); resolve(); };
+    audio.onerror = () => resolve();
     audio.play().catch(resolve);
   });
 }
 
-// ══════════════════════════════════════════
-//  UI HELPERS
-// ══════════════════════════════════════════
-function agregarMensaje(rol, texto) {
-  const cont = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  div.className = `msg ${rol}`;
-  const hora = new Date().toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
-  div.innerHTML = `
-    <div class="msg-burbuja">${texto}</div>
-    <div class="msg-meta">
-      ${rol === 'aria' ? '🤖 ARIA' : '👤 ' + estado.nombreVisitante}
-      · ${hora}
-    </div>
-  `;
-  cont.appendChild(div);
-  cont.scrollTop = cont.scrollHeight;
+// ── UI HELPERS ──
+function agregarMsg(rol, texto) {
+  const c = document.getElementById('tabChat');
+  const d = document.createElement('div'); d.className=`msg ${rol}`;
+  const h = new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+  d.innerHTML=`<div class="msg-burbuja">${texto}</div><div class="msg-meta">${rol==='aria'?'🤖 ARIA':'👤 '+estado.nombreVisitante} · ${h}</div>`;
+  c.appendChild(d); c.scrollTop=c.scrollHeight;
 }
-
-function mostrarAltoValor(categoria) {
-  // Banner en el avatar
-  const banner = document.getElementById('altoValorBanner');
-  banner.textContent = categoria;
-  banner.classList.add('visible');
-  setTimeout(() => banner.classList.remove('visible'), 5000);
-
-  // Mensaje en el chat
-  const cont = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  div.className = 'alto-valor-msg';
-  div.innerHTML = `🔥 ${categoria} detectada — David está siendo alertado`;
-  cont.appendChild(div);
-  cont.scrollTop = cont.scrollHeight;
-
-  // En modo demo (David viendo) mostramos overlay
+function mostrarAltoValor(cat) {
+  const b = document.getElementById('altoValorBanner'); b.textContent=cat; b.classList.add('visible');
+  setTimeout(()=>b.classList.remove('visible'),5000);
+  const c = document.getElementById('tabChat');
+  const d = document.createElement('div'); d.className='alto-valor-chip';
+  d.innerHTML=`🔥 ${cat} — David está siendo alertado`;
+  c.appendChild(d); c.scrollTop=c.scrollHeight;
   const params = new URLSearchParams(window.location.search);
-  if (params.get('admin') === 'david') {
-    document.getElementById('alertaTitulo').textContent = categoria;
-    document.getElementById('alertaInversor').classList.add('show');
+  if (params.get('admin')==='david') {
+    document.getElementById('alertaTitulo').textContent=cat;
+    document.getElementById('alertaInv').classList.add('show');
   }
 }
-
-let typingEl = null;
-function mostrarTyping() {
-  const cont = document.getElementById('chatMessages');
-  typingEl = document.createElement('div');
-  typingEl.className = 'typing';
-  typingEl.id = 'typingIndicator';
-  typingEl.innerHTML = '<span></span><span></span><span></span>';
-  cont.appendChild(typingEl);
-  cont.scrollTop = cont.scrollHeight;
-}
-function quitarTyping() {
-  document.getElementById('typingIndicator')?.remove();
-}
-
-function mostrarSubtitulo(texto) {
+function mostrarSubtitulo(t) {
   const el = document.getElementById('subtituloTexto');
-  el.textContent = texto.slice(0, 120) + (texto.length > 120 ? '...' : '');
-  el.classList.add('visible');
-  setTimeout(() => el.classList.remove('visible'), 6000);
+  el.textContent=t.slice(0,100)+(t.length>100?'...':'');
+  el.classList.add('visible'); setTimeout(()=>el.classList.remove('visible'),5000);
 }
+let typEl=null;
+function mostrarTyping(){const c=document.getElementById('tabChat');typEl=document.createElement('div');typEl.id='typ';typEl.className='typing';typEl.innerHTML='<span></span><span></span><span></span>';c.appendChild(typEl);c.scrollTop=c.scrollHeight;}
+function quitarTyping(){document.getElementById('typ')?.remove();}
+function setStatus(t,ok){document.getElementById('statusLabel').textContent=t;const d=document.getElementById('statusDot');d.style.background=ok?'#00ff88':'#ffd700';d.style.boxShadow=`0 0 8px ${ok?'#00ff88':'#ffd700'}`;}
+function toast(m,t){const el=document.getElementById('toast');el.textContent=m;el.className=`show ${t||''}`;setTimeout(()=>el.className='',3000);}
+function volverEntrada(){document.getElementById('sala').style.display='none';document.getElementById('entrada').style.display='flex';if(estado.audioActual){estado.audioActual.pause();estado.audioActual=null;}}
+function tomarControl(){document.getElementById('alertaInv').classList.remove('show');window.open('https://t.me/dentaliapro25bot','_blank');}
+function simularOnline(){const c=['1 online','2 online','1 online','3 online'];let i=0;setInterval(()=>{document.getElementById('onlineCount').textContent=c[i++%c.length];},18000);}
 
-function setStatus(texto, activo) {
-  document.getElementById('statusText').textContent = texto;
-  const dot = document.getElementById('statusDot');
-  dot.style.background = activo ? '#00ff88' : '#ffd700';
-  dot.style.boxShadow = `0 0 10px ${activo ? '#00ff88' : '#ffd700'}`;
-}
-
-function toast(msg, tipo) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `show ${tipo || ''}`;
-  setTimeout(() => el.className = '', 3000);
-}
-
-function simularOnline() {
-  const counts = ['1 persona online', '2 personas online', '1 persona online', '3 personas online'];
-  let i = 0;
-  setInterval(() => {
-    document.getElementById('onlineCount').textContent = counts[i % counts.length];
-    i++;
-  }, 15000);
-}
-
-function tomarControl() {
-  cerrarAlerta();
-  toast('Abriendo canal directo...', 'success');
-  // Aquí se podría abrir un link a WhatsApp o Telegram de David
-  window.open('https://t.me/dentaliapro25bot', '_blank');
-}
-
-function cerrarAlerta() {
-  document.getElementById('alertaInversor').classList.remove('show');
-}
-
-// ══════════════════════════════════════════
-//  AUTO-RESIZE TEXTAREA
-// ══════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
-  const ta = document.getElementById('inputTexto');
-  if (ta) {
-    ta.addEventListener('input', () => {
-      ta.style.height = 'auto';
-      ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
-    });
-  }
-
-  // Soporte táctil para botón de voz
-  const btnVoz = document.getElementById('btnVoz');
-  if (btnVoz) {
-    btnVoz.addEventListener('touchstart', e => { e.preventDefault(); iniciarGrabacion(); });
-    btnVoz.addEventListener('touchend', e => { e.preventDefault(); pararGrabacion(); });
-  }
+// Auto-resize textarea
+document.addEventListener('DOMContentLoaded',()=>{
+  const ta=document.getElementById('chatInput');
+  if(ta) ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,80)+'px';});
+  const bv=document.getElementById('btnVoz');
+  if(bv){bv.addEventListener('touchstart',e=>{e.preventDefault();iniciarGrabacion();});bv.addEventListener('touchend',e=>{e.preventDefault();pararGrabacion();});}
 });
+
+// Pre-seleccionar si viene con parámetro
+const urlP = new URLSearchParams(window.location.search);
+if(urlP.get('negocio')) {
+  const n=urlP.get('negocio');
+  const el=document.querySelector(`[onclick*="'${n}'"]`);
+  if(el) el.click();
+}
 </script>
 </body>
 </html>
