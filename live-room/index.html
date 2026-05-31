@@ -15,7 +15,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--dark);color:va
 
 /* ── BARRA SUPERIOR ── */
 #topBar{
-  position:fixed;top:0;left:0;right:0;height:36px;z-index:999;
+  position:fixed;top:40px;left:0;right:0;height:36px;z-index:998;
   background:rgba(7,7,15,0.98);backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 16px;gap:16px;font-size:11px;
@@ -65,7 +65,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--dark);color:va
 .btn-entrar:hover{transform:translateY(-2px);box-shadow:0 10px 40px rgba(255,215,0,0.4);}
 
 /* ── SALA ── */
-#sala{display:none;position:relative;z-index:1;height:100vh;flex-direction:column;padding-top:36px;}
+#sala{display:none;position:relative;z-index:1;height:100vh;flex-direction:column;padding-top:76px;}
 
 /* Header sala */
 .sala-header{
@@ -271,6 +271,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--dark);color:va
 </style>
 </head>
 <body>
+<div id="navBar" style="position:fixed;top:0;left:0;right:0;height:40px;z-index:9999;background:rgba(7,7,15,0.98);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,215,0,0.15);display:flex;align-items:center;padding:0 16px;gap:12px;">
+  <a href="../" style="display:flex;align-items:center;gap:6px;color:#ffd700;font-weight:900;font-size:12px;text-decoration:none;letter-spacing:1px;">
+    ← GODMODE
+  </a>
+  <div style="width:1px;height:20px;background:rgba(255,215,0,0.2);"></div>
+  <span style="color:#ffd700;font-weight:700;font-size:12px;">⚡ ARIA LIVE DEMO</span>
+  <div style="flex:1;"></div>
+  <a href="../" style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);border-radius:8px;padding:4px 12px;color:#ffd700;font-size:11px;font-weight:700;text-decoration:none;">🏠 Inicio</a>
+</div>
 
 <!-- BARRA SUPERIOR -->
 <div id="topBar">
