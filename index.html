@@ -1040,7 +1040,7 @@ const ARIA_CONTEXTO = {
   memoria: []
 };
 
-async function gpt(msgs,max=1200,modoOverride=null){
+async function gpt(msgs,max=2500,modoOverride=null){
   const ultimoMsg = msgs.filter(m=>m.role==='user').slice(-1)[0]?.content || '';
   historialCompleto.push({role:'user', content:ultimoMsg});
   contadorMensajes++;
@@ -1080,7 +1080,7 @@ async function gptVision(b64,prompt){
   const r=await fetch('https://api.openai.com/v1/chat/completions',{
     method:'POST',
     headers:{'Authorization':`Bearer ${CFG.openai}`,'Content-Type':'application/json'},
-    body:JSON.stringify({model:'gpt-4o',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:`data:image/jpeg;base64,${b64}`}}]}],max_tokens:800})
+    body:JSON.stringify({model:'gpt-4o',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:`data:image/jpeg;base64,${b64}`}}]}],max_tokens:1200})
   });
   const d=await r.json();
   if(!r.ok)throw new Error(d.error?.message);
@@ -1097,7 +1097,7 @@ async function enviar(){
   addMsg(txt,'user');hist.push({role:'user',content:txt});
   showTyping();
   try{
-    const resp=await gpt([{role:'system',content:SYS},...hist.slice(-16)],1200);
+    const resp=await gpt([{role:'system',content:SYS},...hist.slice(-16)],2500);
     hist.push({role:'assistant',content:resp});
     hideTyping();
     const url=await genVoz(resp);
@@ -3138,6 +3138,7 @@ async function enviarAAvatar() {
         mensaje: msg,
         historial: avatarHistorial.slice(-10),
         modo: 'chat',
+        max_tokens: 2500,
       })
     });
     const data = await res.json();
@@ -3450,7 +3451,7 @@ async function enviarAgenteTexto() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         clinica: agenteClinica, ciudad: agenteCiudad, doctor: agenteDoctor,
-        mensaje: msg, historial: agenteHistorial.slice(-8), modo: 'texto'
+        mensaje: msg, historial: agenteHistorial.slice(-8), modo: 'texto', max_tokens: 2500
       })
     });
     const data = await res.json();
