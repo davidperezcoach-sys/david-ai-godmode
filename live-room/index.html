@@ -324,7 +324,12 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--dark);color:va
 
       <div class="avatar-wrap">
         <div class="avatar-circle" id="avatarCircle">
-          <div class="avatar-inner" id="avatarInner">🤖</div>
+          <div class="avatar-inner" id="avatarInner" style="overflow:hidden;background:radial-gradient(circle at 30% 20%,#1e1e4e,#07070f);">
+            <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;">
+              <div style="font-size:64px;filter:drop-shadow(0 0 20px rgba(255,215,0,0.4));">🎭</div>
+              <div style="font-size:11px;color:rgba(255,215,0,0.7);font-family:monospace;letter-spacing:2px;">ARIA</div>
+            </div>
+          </div>
           <video id="avatarVideo" autoplay playsinline></video>
         </div>
         <div class="aria-status-row">
@@ -456,9 +461,10 @@ async function entrar() {
   // Cargar info del negocio
   setStatus('Cargando información...', false);
   await cargarInfoNegocio();
+  setStatus('ARIA lista', true);
 
-  // Bienvenida
-  await bienvenida();
+  // Bienvenida y avatar en paralelo
+  bienvenida();
   conectarAvatar();
   simularOnline();
 }
@@ -537,7 +543,20 @@ async function bienvenida() {
 
 // ── DEMO COMPLETA ──
 async function iniciarDemo() {
-  if (estado.demoActiva || !estado.pasos.length) return;
+  // Fallback: generar pasos si no se cargaron del backend
+  if (!estado.pasos || !estado.pasos.length) {
+    const n = estado.kb?.nombre || estado.negocioData?.nombreNegocio || 'el sistema';
+    estado.pasos = [
+      {id:'p1',emoji:'🔍',label:'Analizando...',pct:20,voz:`Analizo ${n} y todo lo que puede hacer por tu negocio.`},
+      {id:'p2',emoji:'🤖',label:'Sistema IA 24/7',pct:40,voz:`El sistema trabaja 24 horas al día, 7 días a la semana. Responde, califica y cierra clientes mientras duermes.`},
+      {id:'p3',emoji:'📈',label:'ROI real',pct:60,voz:`Nuestros clientes ven resultados en las primeras 48 horas. ROI medio de 5 veces la inversión en 90 días.`},
+      {id:'p4',emoji:'💡',label:'El diferenciador',pct:80,voz:`No hay nada igual en el mercado. Es la diferencia entre perder clientes y dominar tu sector.`},
+      {id:'p5',emoji:'📄',label:'Propuesta lista',pct:100,voz:`¿Empezamos hoy? David puede llamarte ahora mismo.`}
+    ];
+    const miniHTML = estado.pasos.map(p=>`<div class="demo-paso-mini" id="mini_${p.id}">${p.emoji} ${p.label}</div>`).join('');
+    document.getElementById('demoPasosMini').innerHTML = miniHTML;
+  }
+  if (estado.demoActiva) return;
   estado.demoActiva = true;
   document.getElementById('demoOverlay').style.display = 'block';
   document.getElementById('btnDemo').style.display = 'none';
@@ -676,26 +695,66 @@ async function procesarAudio() {
 // ── AVATAR ──
 async function conectarAvatar() {
   try {
-    const res = await fetch('https://api.liveavatar.ai/v1/sessions', {
-      method:'POST', headers:{'Authorization':`Bearer ${LIVEAVATAR_KEY}`,'Content-Type':'application/json'},
-      body: JSON.stringify({avatar_id:DAVID_AVATAR_ID, quality:'high'})
+    // PASO 1: Obtener token via davidProxy (igual que Godmode v9)
+    const PROXY = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy';
+    const tokenRes = await fetch(PROXY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'liveavatar_token', avatar: 'aria' })
     });
-    if (!res.ok) return;
-    const data = await res.json();
-    const pc = new RTCPeerConnection({iceServers: data.ice_servers||[{urls:'stun:stun.l.google.com:19302'}]});
+    if (!tokenRes.ok) { console.warn('[AVATAR] Token error:', tokenRes.status); return; }
+    const tokenData = await tokenRes.json();
+    if (!tokenData.session_token) { console.warn('[AVATAR] Sin token:', tokenData.error); return; }
+    
+    const sessionId    = tokenData.session_id;
+    const sessionToken = tokenData.session_token;
+    console.log('[AVATAR] Token OK:', tokenData.avatar_name);
+
+    // PASO 2: WebRTC — el cliente crea la oferta
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    
     pc.ontrack = e => {
-      const v = document.getElementById('avatarVideo');
-      v.srcObject = e.streams[0]; v.style.display = 'block';
-      document.getElementById('avatarInner').style.display = 'none';
+      if (e.streams && e.streams[0]) {
+        const v = document.getElementById('avatarVideo');
+        v.srcObject = e.streams[0];
+        v.style.display = 'block';
+        document.getElementById('avatarInner').style.display = 'none';
+        console.log('[AVATAR] ✅ Video en vivo');
+        setStatus('ARIA en vivo', true);
+      }
     };
-    await pc.setRemoteDescription(new RTCSessionDescription({type:'offer', sdp:data.sdp_offer}));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    await fetch(`https://api.liveavatar.ai/v1/sessions/${data.session_id}/answer`, {
-      method:'POST', headers:{'Authorization':`Bearer ${LIVEAVATAR_KEY}`,'Content-Type':'application/json'},
-      body: JSON.stringify({sdp:answer.sdp})
+
+    // DataChannel (necesario para LITE mode)
+    const dc = pc.createDataChannel('avatar-cmd');
+    dc.onopen  = () => console.log('[AVATAR] DataChannel open');
+
+    // Crear oferta SDP
+    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+    await pc.setLocalDescription(offer);
+
+    // PASO 3: Enviar oferta a LiveAvatar
+    const startRes = await fetch(`https://api.liveavatar.com/v1/sessions/${sessionId}/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionToken}`
+      },
+      body: JSON.stringify({ sdp: offer.sdp, type: offer.type })
     });
-  } catch(e) { console.warn('[AVATAR]', e); }
+    const startData = await startRes.json();
+    if (startData.code !== 1000) throw new Error(startData.message || 'Error start');
+
+    // PASO 4: Establecer respuesta del servidor
+    const answer = startData.data;
+    await pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
+    
+    estado.avatarSession = { sessionId, sessionToken, pc, dc };
+    console.log('[AVATAR] ✅ WebRTC conectado');
+
+    // Auto-reconexión cada 4:30 min (sesiones expiran a los 5 min)
+    setTimeout(() => conectarAvatar(), 4.5 * 60 * 1000);
+    
+  } catch(e) { console.warn('[AVATAR] Error:', e.message); }
 }
 
 // ── TTS ──
