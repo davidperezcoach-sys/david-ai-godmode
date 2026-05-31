@@ -3742,16 +3742,142 @@ function mostrarResultadosFinal(data, clinica, ciudad) {
   `;
   boxCards.appendChild(qrEl);
 
+  // ── BOTÓN CIERRE CON VIDEO HEYGEN ────────────────────────────────────
   const btnEl = document.createElement('div');
-  btnEl.style.cssText = 'grid-column:1/-1;text-align:center;margin-top:8px;';
-  btnEl.innerHTML = `<button onclick="resetearDemo()" style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;border-radius:10px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Nueva demo</button>`;
+  btnEl.style.cssText = 'grid-column:1/-1;display:flex;flex-direction:column;gap:10px;margin-top:12px;';
+  
+  // Email del prospecto (leer del formulario)
+  const emailProspecto = document.getElementById('demoEmail') ? document.getElementById('demoEmail').value : '';
+  const nombreProspecto = document.getElementById('demoNombre') ? document.getElementById('demoNombre').value : '';
+  const ciudadProspecto = document.getElementById('demoCiudad') ? document.getElementById('demoCiudad').value : '';
+  
+  btnEl.innerHTML = `
+    <div id="cierre-video-box" style="background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.2);border-radius:14px;padding:16px;text-align:center;">
+      <div style="color:#00ff88;font-size:13px;font-weight:700;margin-bottom:6px;">🎬 Enviar propuesta con vídeo personalizado</div>
+      <div style="color:#6b7280;font-size:11px;margin-bottom:12px;">David Pérez aparece en vídeo hablando directamente al prospecto</div>
+      <input id="cierre-email-input" type="email" placeholder="Email del prospecto" value="${emailProspecto}" 
+        style="width:100%;box-sizing:border-box;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:10px;outline:none;" />
+      <button onclick="lanzarCierreDemo()" id="btn-cierre-demo"
+        style="width:100%;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#0f0f1a;font-size:14px;font-weight:800;padding:12px 20px;border-radius:10px;border:none;cursor:pointer;letter-spacing:0.3px;">
+        🚀 Generar vídeo y enviar por email
+      </button>
+      <div id="cierre-status" style="display:none;margin-top:10px;font-size:12px;color:#9ca3af;"></div>
+    </div>
+    <button onclick="resetearDemo()" style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;border-radius:10px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Nueva demo</button>
+  `;
+  btnEl.dataset.clinica = clinica;
+  btnEl.dataset.ciudad = ciudadProspecto;
+  btnEl.dataset.nombre = nombreProspecto;
+  btnEl.dataset.roi = roi_mes;
   boxCards.appendChild(btnEl);
 
   document.getElementById('demoResultados').style.display = 'block';
   document.getElementById('demoResultados').scrollIntoView({ behavior:'smooth' });
 
-  const fin = `Listo. Todo construido para ${clinica}. El potencial es ${roi_mes} al mes. Escanea el QR y te lo llevas al móvil ahora mismo.`;
+  const fin = `Listo. Todo construido para ${clinica}. El potencial es ${roi_mes} al mes. Escanea el QR y te lo llevas al móvil ahora mismo. Si quieres, puedo enviarle un vídeo personalizado de cierre ahora mismo.`;
   if (typeof avatarSession !== 'undefined' && avatarSession) hablarAvatar(fin); else reproducirTTS(fin);
+}
+
+// ── LANZAR CIERRE CON VIDEO HEYGEN ────────────────────────────────────────
+async function lanzarCierreDemo() {
+  const btn = document.getElementById('btn-cierre-demo');
+  const status = document.getElementById('cierre-status');
+  const emailInput = document.getElementById('cierre-email-input');
+  const email = emailInput ? emailInput.value.trim() : '';
+  
+  if (!email || !email.includes('@')) {
+    status.style.display = 'block';
+    status.style.color = '#f87171';
+    status.textContent = '⚠️ Introduce un email válido del prospecto';
+    return;
+  }
+
+  // Leer datos del contexto de la demo
+  const btnBox = document.getElementById('cierre-video-box').closest('[data-clinica]') || 
+                 document.querySelector('[data-clinica]');
+  const clinica  = btnBox ? btnBox.dataset.clinica  : (document.getElementById('demoClinica')?.value || '');
+  const ciudad   = btnBox ? btnBox.dataset.ciudad   : (document.getElementById('demoCiudad')?.value  || '');
+  const nombre   = btnBox ? btnBox.dataset.nombre   : (document.getElementById('demoNombre')?.value  || '');
+  const roi      = btnBox ? btnBox.dataset.roi      : '';
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Generando vídeo con David...';
+  status.style.display = 'block';
+  status.style.color = '#9ca3af';
+  status.textContent = 'Enviando a HeyGen... el vídeo tarda ~2-3 minutos en generarse.';
+
+  const HEYGEN_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/generarVideoHeygen';
+  const RESEND_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaEmail';
+
+  try {
+    // PASO 1 — Generar vídeo
+    const script = `Hola ${nombre}. Soy David Pérez, fundador de DentalIA PRO. Acabo de terminar de construir en vivo el sistema completo para ${clinica} en ${ciudad}. En menos de diez minutos hemos creado tu agente de WhatsApp entrenado con tu clínica, tu landing page personalizada y tu propuesta comercial lista para firmar. El potencial que calculamos es de ${roi} adicionales al mes. Tienes todo en el email. Si tienes cualquier duda, respóndeme directamente. Nos vemos pronto.`;
+    
+    const vr = await fetch(HEYGEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texto: script, negocio: clinica, sector: 'dental', action: 'create' })
+    });
+    const vd = await vr.json();
+    const videoId = vd.video_id;
+    if (!videoId) throw new Error('No se obtuvo video_id de HeyGen');
+
+    status.textContent = '🎬 Vídeo en generación... comprobando cada 20 segundos...';
+    btn.textContent = '⏳ Esperando vídeo...';
+
+    // PASO 2 — Polling hasta que el vídeo esté listo (máx 5 min)
+    let videoUrl = null;
+    for (let i = 0; i < 15; i++) {
+      await new Promise(r => setTimeout(r, 20000));
+      const cr = await fetch(HEYGEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'status', video_id: videoId })
+      });
+      const cd = await cr.json();
+      const vStatus = cd?.data?.status || cd?.status || 'unknown';
+      const vUrl    = cd?.data?.video_url || cd?.video_url || null;
+      status.textContent = `🎬 Estado vídeo: ${vStatus} (${(i+1)*20}s)`;
+      if (vStatus === 'completed' && vUrl) { videoUrl = vUrl; break; }
+      if (vStatus === 'failed') throw new Error('HeyGen falló al generar el vídeo');
+    }
+
+    if (!videoUrl) throw new Error('Tiempo de espera agotado — vídeo no listo');
+
+    // PASO 3 — Enviar email con el vídeo
+    status.textContent = '📧 Enviando email al prospecto...';
+    btn.textContent = '📧 Enviando email...';
+
+    const roiTexto = roi || '12.000EUR+/mes';
+    const asunto = (nombre ? nombre + ', ' : '') + 'tu sistema para ' + (clinica || 'tu clínica') + ' ya está listo 🚀';
+    const htmlEmail = `<!DOCTYPE html><html><head><meta charset='utf-8'></head><body style='margin:0;padding:0;background:#0f0f1a;font-family:Arial,sans-serif;color:#fff;'><div style='max-width:600px;margin:0 auto;padding:40px 20px;'><div style='text-align:center;margin-bottom:32px;'><div style='color:#00ff88;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;'>DentalIA PRO</div><h1 style='font-size:26px;font-weight:800;margin:0;'>Tu sistema está listo, <span style='color:#00ff88;'>${nombre || 'doctor'}</span> 🎉</h1></div><div style='border-radius:16px;overflow:hidden;margin-bottom:28px;border:2px solid rgba(0,255,136,0.3);'><a href='${videoUrl}' target='_blank' style='display:block;text-decoration:none;'><img src='https://resource2.heygen.ai/best_frame_selection/candidates/b9c8b1f4194b4c02a739e35da89963c8.jpg' style='width:100%;display:block;opacity:0.85;' alt='David Perez' /><div style='background:rgba(0,255,136,0.08);padding:14px;text-align:center;color:#00ff88;font-weight:700;font-size:14px;'>▶ David Pérez te explica tu sistema personalizado</div></a></div><div style='background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:16px;padding:24px;margin-bottom:24px;text-align:center;'><div style='color:#9ca3af;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;'>Potencial mensual</div><div style='color:#00ff88;font-size:38px;font-weight:900;'>${roiTexto}</div><div style='color:#6b7280;font-size:12px;'>con automatización de citas y reducción de no-shows</div></div><div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;margin-bottom:24px;'><div style='font-size:15px;font-weight:700;margin-bottom:12px;'>✅ Lo que hemos construido para ti</div><div style='padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);color:#d1d5db;'>🤖 Agente WhatsApp entrenado para ${clinica || 'tu clínica'}</div><div style='padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);color:#d1d5db;'>🌐 Landing Page personalizada</div><div style='padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);color:#d1d5db;'>📄 Propuesta comercial lista para firmar</div><div style='padding:8px 0;color:#d1d5db;'>📊 Análisis de ROI con datos reales</div></div><div style='text-align:center;margin-bottom:32px;'><a href='${videoUrl}' target='_blank' style='display:inline-block;background:linear-gradient(135deg,#00ff88,#00cc6a);color:#0f0f1a;font-size:16px;font-weight:800;padding:16px 40px;border-radius:50px;text-decoration:none;'>▶ Ver mi mensaje de David</a><div style='color:#6b7280;font-size:12px;margin-top:10px;'>o responde este email para hablar con David directamente</div></div><div style='border-top:1px solid rgba(255,255,255,0.06);padding-top:20px;'><div style='font-weight:700;'>David Pérez</div><div style='color:#00ff88;font-size:12px;'>Fundador · DentalIA PRO</div><div style='color:#6b7280;font-size:11px;'>dentaliapro.com</div></div></div></body></html>`;
+
+    const er = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer re_avTB2Rzc_KLr94iT8GbygSUHKi512WeWf', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: 'David Pérez · DentalIA PRO <aria@dentaliapro.com>', to: [email], subject: asunto, html: htmlEmail })
+    });
+    const ed = await er.json();
+
+    if (er.ok || ed.id) {
+      status.style.color = '#00ff88';
+      status.textContent = '✅ Email enviado a ' + email + ' con el vídeo de David';
+      btn.textContent = '✅ ¡Enviado!';
+      btn.style.background = 'rgba(0,255,136,0.15)';
+      btn.style.color = '#00ff88';
+      btn.style.border = '1px solid rgba(0,255,136,0.3)';
+      if (typeof hablarAvatar === 'function') hablarAvatar('Perfecto. El vídeo personalizado de David ya está en el email de ' + (nombre || 'el prospecto') + '. Ahora es su turno.');
+    } else {
+      throw new Error('Resend error: ' + JSON.stringify(ed));
+    }
+
+  } catch(err) {
+    console.error('[CierreDemo]', err);
+    status.style.color = '#f87171';
+    status.textContent = '❌ Error: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = '🔄 Reintentar';
+  }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────
