@@ -2720,6 +2720,7 @@ let avatarSwapEn        = 270000; // 4:30 min en ms — swap antes de que LiveAv
 let avatarEnReconexion  = false;  // flag para evitar doble swap
 let avatarVideo2        = null;   // segundo elemento video para crossfade
 const PROXY_URL    = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy'; // ARIA Flowie — cerebro real
+const AVATAR_TTS_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaAgenteDemo'; // PCM TTS para LiveAvatar
 
 let avatarSession     = null;   // { session_id, session_token }
 let avatarPeerConn    = null;   // RTCPeerConnection
@@ -3144,40 +3145,60 @@ async function hablarAvatar(texto) {
     const badge = document.getElementById('avatarSpeakingBadge');
     if (badge) badge.style.display = 'block';
 
-    // Obtener audio TTS via ElevenLabs (proxy)
-    const ttsRes = await fetch(PROXY_URL, {
+    // 1. Obtener PCM 16-bit 24kHz — formato que LiveAvatar necesita
+    const ttsRes = await fetch(AVATAR_TTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ modo: 'tts', texto })
+      body: JSON.stringify({ modo: 'tts_pcm', texto })
     });
     const ttsData = await ttsRes.json();
 
     if (ttsData.audio_b64 && avatarWS && avatarWS.readyState === WebSocket.OPEN) {
-      // Enviar al avatar via WebSocket LiveKit
-      // Formato: PCM 16-bit 24kHz Base64 — el proxy ya debe devolverlo
-      avatarWS.send(JSON.stringify({
-        type: 'agent.speak',
-        audio: ttsData.audio_b64
-      }));
-      avatarWS.send(JSON.stringify({
-        type: 'agent.speak_end',
-        event_id: 'speak_' + Date.now()
-      }));
-      console.log('[Avatar] Audio enviado por WS');
-    } else if (ttsData.audio_b64) {
-      // Reproducir localmente como fallback
-      const bytes = Uint8Array.from(atob(ttsData.audio_b64), c => c.charCodeAt(0));
-      const blob  = new Blob([bytes], { type: 'audio/mpeg' });
-      const url   = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.play();
-    } else {
-      // ElevenLabs directo
-      const audioUrl = await genVoz(texto);
-      if (audioUrl) {
-        const a = new Audio(audioUrl); 
-        a.play();
+      // 2. Enviar PCM al avatar via WebSocket — el avatar mueve la boca en sincronía
+      const eventId = 'speak_' + Date.now();
+      avatarWS.send(JSON.stringify({ type: 'agent.speak', audio: ttsData.audio_b64, event_id: eventId }));
+      avatarWS.send(JSON.stringify({ type: 'agent.speak_end', event_id: eventId }));
+      console.log('[Avatar] PCM enviado por WS, chars:', ttsData.audio_b64.length);
+
+      // 3. Reproducir audio localmente también para que David lo escuche
+      try {
+        const bytes = Uint8Array.from(atob(ttsData.audio_b64 || ''), c => c.charCodeAt(0));
+        // PCM → reproducir via AudioContext
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        const pcmData = new Int16Array(bytes.buffer);
+        const floatData = new Float32Array(pcmData.length);
+        for (let j = 0; j < pcmData.length; j++) floatData[j] = pcmData[j] / 32768.0;
+        const buffer = audioCtx.createBuffer(1, floatData.length, 24000);
+        buffer.copyToChannel(floatData, 0);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        source.start();
+      } catch(audioErr) {
+        console.warn('[Avatar] Audio local fallback:', audioErr);
+        await genVoz(texto).then(url => url && new Audio(url).play());
       }
+    } else if (ttsData.audio_b64) {
+      // WS no disponible — reproducir localmente el PCM
+      console.warn('[Avatar] WS no disponible, reproduciendo PCM local');
+      try {
+        const bytes = Uint8Array.from(atob(ttsData.audio_b64), c => c.charCodeAt(0));
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        const pcmData = new Int16Array(bytes.buffer);
+        const floatData = new Float32Array(pcmData.length);
+        for (let j = 0; j < pcmData.length; j++) floatData[j] = pcmData[j] / 32768.0;
+        const buffer = audioCtx.createBuffer(1, floatData.length, 24000);
+        buffer.copyToChannel(floatData, 0);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        source.start();
+      } catch(e) { await reproducirTTS(texto); }
+    } else {
+      // Sin PCM — ElevenLabs directo
+      const audioUrl = await genVoz(texto);
+      if (audioUrl) { new Audio(audioUrl).play(); }
+      else { await reproducirTTS(texto); }
     }
 
   } catch(e) {
@@ -3187,9 +3208,10 @@ async function hablarAvatar(texto) {
     setTimeout(() => {
       const badge = document.getElementById('avatarSpeakingBadge');
       if (badge) badge.style.display = 'none';
-    }, Math.max(2000, texto.length * 60));
+    }, Math.max(2000, texto.length * 65));
   }
 }
+
 
 // ─── CHAT CON ARIA ────────────────────────────────────────────────
 async function enviarAAvatar() {
