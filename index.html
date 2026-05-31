@@ -2719,7 +2719,7 @@ let avatarSwapInterval  = null;   // interval que actualiza el countdown
 let avatarSwapEn        = 270000; // 4:30 min en ms — swap antes de que LiveAvatar corte a los 5 min
 let avatarEnReconexion  = false;  // flag para evitar doble swap
 let avatarVideo2        = null;   // segundo elemento video para crossfade
-const PROXY_URL    = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaAgenteDemo';
+const PROXY_URL    = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy'; // ARIA Flowie — cerebro real
 
 let avatarSession     = null;   // { session_id, session_token }
 let avatarPeerConn    = null;   // RTCPeerConnection
@@ -3211,9 +3211,9 @@ async function enviarAAvatar() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         mensaje: msg,
-        historial: avatarHistorial.slice(-10),
-        modo: 'chat',
+        messages: avatarHistorial.slice(-10),
         max_tokens: 2500,
+        contexto: { ubicacion: 'ARIA Live Studio', negocio: 'DentalIA PRO' }
       })
     });
     const data = await res.json();
@@ -3293,7 +3293,7 @@ function iniciarMicAvatar() {
           const res = await fetch(PROXY_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ modo: 'voz', audio_b64: b64, historial: [], clinica: 'DentalIA PRO', ciudad: 'Madrid' })
+            body: JSON.stringify({ modo: 'voz', audio_b64: b64, messages: avatarHistorial.slice(-6) })
           });
           const data = await res.json();
           const texto = data.texto_usuario || data.texto || data.transcripcion || '';
