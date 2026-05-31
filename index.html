@@ -963,7 +963,7 @@ function hablarNavegador(texto){
 async function genVoz(texto){
   if(!CFG.eleven||!CFG.voiceId)return null;
   try{
-    const txc=limpiarParaVoz(texto); const txt=txc.length>380?txc.slice(0,377)+'...':txc;
+    const txc=limpiarParaVoz(texto); const txt=txc.length>2500?txc.slice(0,2490)+'...':txc;
     const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${CFG.voiceId}`,{
       method:'POST',
       headers:{'xi-api-key':CFG.eleven,'Content-Type':'application/json','Accept':'audio/mpeg'},
@@ -2729,6 +2729,18 @@ let avatarHistorial   = [];
 
 // ─── ABRIR / CERRAR ───────────────────────────────────────────────
 function abrirAvatar() {
+  // Reset: siempre abrir en modo CHAT (no demo)
+  modoDemoActivo = false;
+  const pc = document.getElementById('panelChat');
+  const pd = document.getElementById('panelDemo');
+  const btnD = document.getElementById('btnModoDemo');
+  if (pc) { pc.classList.remove('oculto'); }
+  if (pd) { pd.classList.remove('activo'); }
+  if (btnD) {
+    btnD.style.background = 'rgba(0,255,136,.08)';
+    btnD.style.borderColor = 'rgba(0,255,136,.3)';
+    btnD.textContent = '🎬 Modo Demo';
+  }
   document.getElementById('avatarOverlay').style.display = 'block';
 }
 function cerrarAvatar() {
@@ -3054,7 +3066,11 @@ function detenerAvatar() {
 
 // ─── HACER HABLAR AL AVATAR ───────────────────────────────────────
 async function hablarAvatar(texto) {
-  if (!avatarSession) return;
+  // Si el avatar no está activo → TTS local con ElevenLabs/navegador
+  if (!avatarSession) {
+    await reproducirTTS(texto);
+    return;
+  }
   try {
     document.getElementById('avatarSpeakingBadge').style.display = 'block';
 
@@ -3123,9 +3139,9 @@ async function enviarAAvatar() {
     avatarHistorial.push({ role:'assistant', content: respuesta });
 
     // Si el avatar está activo → que hable
-    if (avatarSession) hablarAvatar(respuesta);
-    else {
-      // Reproducir TTS localmente aunque el avatar no esté
+    // hablarAvatar ya incluye fallback TTS si el avatar no está conectado
+    hablarAvatar(respuesta);
+    if(false) {  // legacy — ya no se usa directamente
       reproducirTTS(respuesta);
     }
   } catch(e) {
@@ -3135,18 +3151,22 @@ async function enviarAAvatar() {
 }
 
 async function reproducirTTS(texto) {
+  const txtLimpio = limpiarParaVoz(texto);
   try {
     const res = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ modo: 'tts', texto })
+      body: JSON.stringify({ modo: 'tts', texto: txtLimpio })
     });
     const data = await res.json();
     if (data.audio_b64) {
       const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
-      audio.play().catch(()=>{});
+      audio.play().catch(()=>{ hablarNavegador(txtLimpio); });
+      return;
     }
   } catch(e) { console.error('[TTS]', e); }
+  // Fallback: voz del navegador
+  hablarNavegador(txtLimpio);
 }
 
 // ─── MIC EN AVATAR ────────────────────────────────────────────────
@@ -3578,12 +3598,12 @@ function getPasos(clinica, ciudad) {
     {
       id:'p1', emoji:'🔍', label:'Analizando tu clínica en Google...', pct:20,
       imgUrl: IMGS.p1,
-      voz: `Primero busco ${clinica} en Google. Extraigo tu rating real, reseñas, servicios y competencia en tiempo real.`
+      voz: `Primero busco ${clinica} en Google. Extraigo tu rating real, reseñas, servicios y competencia en tiempo real. Esto me da el contexto perfecto para construir tu sistema a medida.`
     },
     {
       id:'p2', emoji:'🧮', label:'Calculando ROI personalizado...', pct:40,
       imgUrl: IMGS.p2,
-      voz: `Calculo exactamente cuánto dinero estás perdiendo al mes. Leads no contestados, citas perdidas, pacientes que van a la competencia.`
+      voz: `Calculo exactamente cuánto dinero estás perdiendo al mes por leads no contestados, citas perdidas y pacientes que se van a la competencia. Con estos números construyo el ROI real de activar el sistema.`
     },
     {
       id:'p3', emoji:'🤖', label:'Fabricando tu agente de WhatsApp...', pct:60,
@@ -3621,7 +3641,7 @@ async function iniciarDemoEnVivo() {
   demoImagenes = [];
 
   const intro = `Perfecto. En los próximos 30 segundos construyo el sistema completo para ${clinica} en ${ciudad}. Cada paso que ves en pantalla lo explico en vivo. Observa.`;
-  if (typeof avatarSession !== 'undefined' && avatarSession) { await hablarAvatar(intro); } else { await reproducirTTS(intro); }
+  await hablarAvatar(intro); // hablarAvatar ya incluye fallback TTS automático
   await dormir(2000);
 
   // Backend en paralelo — no bloqueamos la animación
