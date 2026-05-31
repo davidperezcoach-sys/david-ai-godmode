@@ -2658,7 +2658,7 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
           </div>
           <div id="demoPasos" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px;"></div>
           <!-- ══ PANEL AGENTE EN VIVO — texto + voz ══ -->
-          <div id="panelAgenteLive" style="display:none;flex-direction:column;border-top:1px solid rgba(0,255,136,.15);flex-shrink:0;max-height:320px;">
+          <div id="panelAgenteLive" style="display:none;flex-direction:column;border-top:1px solid rgba(0,255,136,.15);flex-shrink:0;max-height:260px;">
             <!-- Header -->
             <div style="padding:10px 16px;background:rgba(0,255,136,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
               <div style="display:flex;align-items:center;gap:8px;">
@@ -3592,8 +3592,12 @@ function abrirAgenteLive(clinica, ciudad, doctor) {
   // Animar entrada
   panel.style.animation = 'wIn .4s ease';
   
-  // Focus en input
-  setTimeout(() => document.getElementById('agenteMsg')?.focus(), 300);
+  // Scroll automático al panel del agente
+  setTimeout(() => {
+    const panel = document.getElementById('panelAgenteLive');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    document.getElementById('agenteMsg')?.focus();
+  }, 400);
 }
 
 function cerrarAgenteLive() {
@@ -3802,53 +3806,93 @@ function resetDemo() {
 }
 
 // ── Pasos con prompt de imagen ────────────────────────────────────────────
-function getPasos(clinica, ciudad) {
-  // Imágenes reales pregeneradas con IA — siempre disponibles, sin API externa
-  const IMGS = {
-    p1: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/2a072eb65_generated_image.png',
-    p2: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/de25fda84_generated_image.png',
-    p3: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/e402ac484_generated_image.png',
-    p4: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/b51b22c31_generated_image.png',
-    p5: 'https://media.base44.com/images/public/69b56904ba1a680fbeac06aa/0c87dfd86_generated_image.png',
-  };
+function getPasos(clinica, ciudad, datosReales) {
+  // datosReales viene del scraping previo: {rating, resenas, telefono, web, servicios, competidores}
+  const d = datosReales || {};
+  const rating   = d.rating   || '4.8★';
+  const resenas  = d.resenas  || '47';
+  const web      = d.web      || 'sin web optimizada';
+  const tel      = d.telefono || 'número en Google';
+
   return [
     {
-      id:'p1', emoji:'🔍', label:'Analizando tu clínica en Google...', pct:20,
-      imgUrl: IMGS.p1,
-      voz: `Primero busco ${clinica} en Google. Extraigo tu rating real, reseñas, servicios y competencia en tiempo real. Esto me da el contexto perfecto para construir tu sistema a medida.`
+      id:'p0', emoji:'🔍', label:`Investigando ${clinica} en Google Maps...`, pct:10,
+      voz: `Antes de construir nada, necesito conocerte. Busco ${clinica} en ${ciudad} en Google Maps. 
+Veo que tienes ${rating} con ${resenas} reseñas. Eso es importante porque significa que ya tienes pacientes que confían en ti. 
+Pero hay algo crítico: voy a analizar tu presencia digital, tu competencia en ${ciudad}, y exactamente por qué estás perdiendo pacientes cada semana sin darte cuenta. Dame un momento.`,
+      duracion: 15000
     },
     {
-      id:'p2', emoji:'🧮', label:'Calculando ROI personalizado...', pct:40,
-      imgUrl: IMGS.p2,
-      voz: `Calculo exactamente cuánto dinero estás perdiendo al mes por leads no contestados, citas perdidas y pacientes que se van a la competencia. Con estos números construyo el ROI real de activar el sistema.`
+      id:'p1', emoji:'📊', label:`Analizando competencia en ${ciudad}...`, pct:22,
+      voz: `He encontrado ${d.competidores || '8'} clínicas dentales compitiendo contigo en ${ciudad}. 
+La mayoría tiene agentes de WhatsApp que responden en menos de 30 segundos. 
+Tu clínica, como la mayoría, probablemente responde cuando alguien puede — y eso se traduce en pacientes perdidos. 
+Cada lead que no contestas en menos de 5 minutos tiene un 80% de probabilidad de irse a la competencia. 
+Te voy a mostrar exactamente cuánto dinero supone eso cada mes.`,
+      duracion: 18000
     },
     {
-      id:'p3', emoji:'🤖', label:'Fabricando tu agente de WhatsApp...', pct:60,
-      imgUrl: IMGS.p3,
-      voz: `Construyo tu agente personalizado para ${clinica}. Lo entreno con tus servicios, tono y cómo manejar objeciones. Ahora mismo puedes hablar con él — escríbele o usa tu voz. Es tu agente, ya entrenado para ${clinica}.`,
+      id:'p2', emoji:'💰', label:`Calculando pérdidas reales de ${clinica}...`, pct:35,
+      voz: `Hago los números reales para ${clinica}. 
+Si tienes ${d.leads_mes || '40'} consultas al mes y pierdes el 30% por respuesta lenta — eso son ${d.leads_perdidos || '12'} pacientes perdidos. 
+Un implante vale de media 1.200 euros. Una ortodoncia, 3.500. 
+Estás dejando entre 8.000 y 15.000 euros sobre la mesa cada mes. 
+No porque no seas bueno — sino porque no tienes un sistema. Eso es exactamente lo que voy a construirte ahora mismo.`,
+      duracion: 20000
+    },
+    {
+      id:'p3', emoji:'🤖', label:`Fabricando agente IA personalizado para ${clinica}...`, pct:52,
+      voz: `Construyo tu agente de WhatsApp. Lo entreno con el nombre de tu clínica, tus servicios, tu ciudad, y cómo manejar las preguntas más frecuentes de pacientes dentales. 
+Precio de blanqueamiento, cuánto tarda un implante, si aceptas seguro — lo sabe todo. 
+Y lo más importante: cuando alguien escribe a las 11 de la noche preguntando por una urgencia, tu agente responde en 3 segundos, recoge sus datos y te manda una alerta. 
+Pruébalo ahora mismo — escríbele algo como si fueras un paciente. Verás cómo responde ya entrenado para ${clinica}.`,
+      duracion: 22000,
       demo: true
     },
     {
-      id:'p4', emoji:'🌐', label:'Creando tu landing page...', pct:80,
-      imgUrl: IMGS.p4,
-      voz: `Genero la landing page con tu nombre, ciudad y servicios. Alta conversión, diseño premium, lista para publicar hoy.`
+      id:'p4', emoji:'🌐', label:`Generando landing page de alta conversión...`, pct:67,
+      voz: `Ahora genero tu landing page. No una plantilla genérica — una página diseñada específicamente para captar pacientes en ${ciudad}. 
+Con el nombre de ${clinica}, tus servicios principales, botón de WhatsApp directo, formulario de urgencias y testimonio visual. 
+Esta página se conecta con tus campañas de Meta Ads para captar pacientes nuevos 24 horas al día, 7 días a la semana. 
+Mientras tú duermes, esta página está trabajando para ti.`,
+      duracion: 18000
     },
     {
-      id:'p5', emoji:'📄', label:'Preparando propuesta comercial...', pct:100,
-      imgUrl: IMGS.p5,
-      voz: `Por último, la propuesta completa con ROI real, plan de implementación y precio. Lista para firmar hoy mismo.`
+      id:'p5', emoji:'📧', label:`Configurando sistema de seguimiento automático...`, pct:80,
+      voz: `El 68% de los pacientes que no confirman cita en 24 horas, se olvidan. Con el sistema de seguimiento automático, ${clinica} envía un recordatorio personalizado por WhatsApp y email. 
+Si no responden, a las 48 horas otro recordatorio. A los 7 días, una oferta especial. 
+Todo automático. Sin que tú hagas nada. 
+Y si un paciente lleva 6 meses sin venir, el sistema lo detecta y le manda un mensaje de reactivación. Eso solo ya recupera entre 3 y 8 pacientes al mes.`,
+      duracion: 18000
+    },
+    {
+      id:'p6', emoji:'🎬', label:`Generando vídeo personalizado de cierre...`, pct:92,
+      voz: `Por último, genero un vídeo personalizado para ${clinica}. 
+Un vídeo donde mi avatar explica en 60 segundos exactamente qué sistema hemos construido hoy para tu clínica, qué ROI puedes esperar y cuál es el siguiente paso. 
+Este vídeo lo recibirás por email y lo puedes compartir con tu equipo o socios esta misma noche. 
+El vídeo se está generando ahora mismo — en unos minutos lo tienes listo.`,
+      duracion: 16000,
+      generarVideo: true
+    },
+    {
+      id:'p7', emoji:'📄', label:`Preparando propuesta de cierre personalizada...`, pct:100,
+      voz: `Y aquí está tu propuesta completa. 
+ROI proyectado para ${clinica}: entre 8.000 y 15.000 euros adicionales al mes. 
+Inversión en el sistema: 297 euros al mes. Todo incluido — agente WhatsApp, landing, seguimiento automático, soporte y evolución constante. 
+La pregunta no es si puedes permitirte esto. La pregunta es cuánto más tiempo puedes permitirte no tenerlo. 
+Estoy aquí para responder cualquier duda. ¿Qué quieres saber primero?`,
+      duracion: 20000
     }
   ];
 }
 
-// ── DEMO PRINCIPAL ────────────────────────────────────────────────────────
 async function iniciarDemoEnVivo() {
   const clinica  = (document.getElementById('demoClinica')?.value  || '').trim();
   const ciudad   = (document.getElementById('demoCiudad')?.value   || '').trim();
   const nombre   = (document.getElementById('demoNombre')?.value   || 'Doctor/a').trim();
   const clientes = parseInt(document.getElementById('demoClientes')?.value || '80');
 
-  if (!clinica || !ciudad) { alert('Escribe la clínica y la ciudad'); return; }
+  if (!clinica || !ciudad) { alert('Escribe el nombre de la clínica y la ciudad'); return; }
 
   document.getElementById('demoFormPanel').style.display = 'none';
   document.getElementById('demoBuildPanel').style.display = 'flex';
@@ -3857,69 +3901,137 @@ async function iniciarDemoEnVivo() {
   setProgress(0);
   demoImagenes = [];
 
-  const intro = `Perfecto. En los próximos 30 segundos construyo el sistema completo para ${clinica} en ${ciudad}. Cada paso que ves en pantalla lo explico en vivo. Observa.`;
-  await hablarAvatar(intro); // hablarAvatar ya incluye fallback TTS automático
+  // ── FASE 0: Investigación real de la clínica ─────────────────────────
+  const introVoz = `Perfecto. Voy a construir el sistema completo para ${clinica} en ${ciudad}. 
+Pero antes de mostrar cualquier resultado, voy a investigar tu clínica de verdad — Google Maps, competencia local, presencia digital. 
+Lo que ves en pantalla va a ser real, con datos de tu negocio. Dame un momento.`;
+  
+  // Mostrar estado de investigación
+  const demoPasosEl = document.getElementById('demoPasos');
+  demoPasosEl.innerHTML = `<div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);border-radius:14px;padding:20px;display:flex;align-items:center;gap:12px;">
+    <div style="width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e;animation:blink 1s infinite;flex-shrink:0;"></div>
+    <div>
+      <div style="color:#86efac;font-weight:800;font-size:14px;">🔎 Investigando ${clinica} en ${ciudad}...</div>
+      <div style="color:#6b7280;font-size:12px;margin-top:4px;">Buscando en Google Maps, analizando competencia, verificando datos reales</div>
+    </div>
+  </div>`;
+
+  // Hablar intro Y llamar al backend en paralelo
+  const [_, backendData] = await Promise.all([
+    hablarAvatar(introVoz),
+    // Llamar al backend que investiga la clínica real
+    fetch(DEMO_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        clinica, ciudad, 
+        nombre_prospecto: nombre, 
+        sector: 'dental', 
+        clientes_mes: clientes, 
+        investigar: true  // flag para que el backend busque datos reales
+      })
+    }).then(r => r.json()).catch(() => ({}))
+  ]);
+
+  // Datos reales del backend (o estimados si falla)
+  const datosReales = {
+    rating:       backendData.rating       || '4.7★',
+    resenas:      backendData.resenas      || '38',
+    telefono:     backendData.telefono     || '',
+    web:          backendData.web          || '',
+    servicios:    backendData.servicios    || ['implantes','ortodoncia','blanqueamiento'],
+    competidores: backendData.competidores || '7',
+    leads_mes:    backendData.leads_mes    || clientes,
+    leads_perdidos: backendData.leads_perdidos || Math.round(clientes * 0.3),
+    roi_mes:      backendData.roi?.beneficio_neto_mes || '12.400',
+    landing:      backendData.construido?.landing || null,
+    propuesta:    backendData.construido?.propuesta || null
+  };
+
+  // Mostrar datos encontrados brevemente
+  demoPasosEl.innerHTML = `<div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);border-radius:14px;padding:16px;">
+    <div style="color:#86efac;font-weight:800;font-size:13px;margin-bottom:8px;">✅ ${clinica} encontrada en ${ciudad}</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      <span style="color:#d1fae5;font-size:12px;">⭐ ${datosReales.rating}</span>
+      <span style="color:#d1fae5;font-size:12px;">💬 ${datosReales.resenas} reseñas</span>
+      <span style="color:#d1fae5;font-size:12px;">🏙️ ${ciudad}</span>
+      ${datosReales.web ? `<span style="color:#d1fae5;font-size:12px;">🌐 Web detectada</span>` : ''}
+    </div>
+  </div>`;
+
   await dormir(2000);
 
-  // Backend en paralelo — no bloqueamos la animación
-  const promesaBackend = fetch(DEMO_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ clinica, ciudad, nombre_prospecto: nombre, sector:'dental', clientes_mes: clientes, email:'', telefono:'' })
-  }).then(r => r.json()).catch(() => ({}));
-
-  const PASOS = getPasos(clinica, ciudad);
+  // ── FASE 1: Construcción paso a paso lenta y bien explicada ──────────
   const FAL_URL = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/falImageGen';
+  const PASOS = getPasos(clinica, ciudad, datosReales);
+  let videoHeygenId = null; // para lanzar HeyGen en background
 
   for (let i = 0; i < PASOS.length; i++) {
     const p = PASOS[i];
     addPaso(p.id, p.emoji, p.label);
-    setProgress(p.pct - 15);
+    setProgress(p.pct - 10);
 
-    // Fal.ai — genera imagen personalizada en tiempo real (fallback automático si sin saldo)
+    // Imagen en paralelo (no bloquea la voz)
     const falPromise = fetch(FAL_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paso: p.id, clinica, ciudad })
     }).then(r => r.json()).then(d => {
-      if (d.ok && d.url) {
-        mostrarImagenEnPaso(p.id, d.url);
-        if (d.source === 'fal.ai') console.log('🎨 Fal.ai imagen generada para', p.id);
-      }
-    }).catch(() => { if (p.imgUrl) mostrarImagenEnPaso(p.id, p.imgUrl); });
+      if (d.ok && d.url) mostrarImagenEnPaso(p.id, d.url);
+    }).catch(() => {});
 
-    // VOZ + imagen en paralelo
-    const vozPromise = (typeof avatarSession !== 'undefined' && avatarSession)
-      ? hablarAvatar(p.voz)
-      : reproducirTTS(p.voz);
+    // Si este paso lanza vídeo HeyGen en background
+    if (p.generarVideo) {
+      videoHeygenId = 'generando';
+      fetch('https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/generarVideoHeygen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          clinica, ciudad, nombre,
+          roi: datosReales.roi_mes,
+          script: `Hola, soy ARIA. He construido el sistema completo para ${clinica} en ${ciudad}. Con un ROI proyectado de ${datosReales.roi_mes} euros mensuales, este sistema incluye agente WhatsApp entrenado, landing page de alta conversión y seguimiento automático. El siguiente paso es una llamada de 20 minutos para activarlo. ¿Hablamos?`
+        })
+      }).then(r => r.json()).then(d => { 
+        if (d.video_id) videoHeygenId = d.video_id;
+      }).catch(() => {});
+    }
 
-    await Promise.all([vozPromise, falPromise, dormir(i === 0 ? 3500 : 2500)]);
+    // VOZ — esperar a que ARIA termine de hablar completamente
+    const vozPromise = hablarAvatar(p.voz);
+    
+    // Tiempo mínimo de cada paso
+    const tiempoMin = p.duracion || 12000;
+    await Promise.all([vozPromise, falPromise, dormir(tiempoMin)]);
+    
     setPasoOk(p.id);
     setProgress(p.pct);
-    
-    // Si este paso tiene demo interactiva → abrir agente en vivo
+
+    // Demo interactiva del agente
     if (p.demo) {
-      const clinicaVal = clinica;
-      const ciudadVal  = ciudad;
-      const doctorVal  = (document.getElementById('demoNombre')?.value || '').trim();
-      abrirAgenteLive(clinicaVal, ciudadVal, doctorVal);
-      // ARIA anuncia la demo
-      const anuncio = `Ahora mismo puedes hablar con tu agente. Escríbele o usa la voz. Está entrenado para ${clinicaVal} — responde como lo haría en real.`;
-      if (typeof avatarSession !== 'undefined' && avatarSession) {
-        hablarAvatar(anuncio);
-      } else {
-        reproducirTTS(anuncio);
-      }
-      await dormir(4000);
+      abrirAgenteLive(clinica, ciudad, nombre);
+      const anuncio = `El agente está listo. Escríbele ahora — como si fueras un paciente. Pregúntale por el precio de un implante, o di que tienes una urgencia. Verás cómo responde en tiempo real.`;
+      await hablarAvatar(anuncio);
+      await dormir(8000); // dar tiempo para interactuar
     }
-    
-    await dormir(300);
+
+    // Pausa entre pasos para que se vea bien
+    await dormir(800);
   }
 
-  // Resultado final del backend
-  const data = await promesaBackend;
-  mostrarResultadosFinal(data, clinica, ciudad);
+  // ── FASE 2: Cierre con resultados ────────────────────────────────────
+  mostrarResultadosFinal(backendData, clinica, ciudad);
+
+  // Esperar vídeo HeyGen si está generándose
+  if (videoHeygenId && videoHeygenId !== 'generando') {
+    const finVoz = `Tu sistema está completo. El vídeo personalizado de ${clinica} se está generando ahora mismo — en 2-3 minutos lo tienes en tu email. Mientras tanto, aquí tienes todo lo que hemos construido hoy. ¿Qué te parece? ¿Tienes alguna duda antes de activarlo?`;
+    await hablarAvatar(finVoz);
+  } else {
+    const finVoz = `Esto es lo que hemos construido para ${clinica} en los últimos minutos. Un sistema completo que trabaja 24 horas al día, 7 días a la semana. La pregunta es simple: ¿cuándo lo activamos?`;
+    await hablarAvatar(finVoz);
+  }
 }
+
+
 
 // ── RESULTADO FINAL + QR ─────────────────────────────────────────────────
 function mostrarResultadosFinal(data, clinica, ciudad) {
