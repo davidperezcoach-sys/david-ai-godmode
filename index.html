@@ -269,6 +269,7 @@ textarea::placeholder{color:var(--td);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 .toast.err{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.22);color:var(--r);}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
 </head>
 <body>
   <!-- ===== ARIA DIOS: BARRA STATS EN TIEMPO REAL ===== -->
@@ -2743,15 +2744,12 @@ function abrirAvatar() {
     btnD.textContent = '🎬 Modo Demo';
   }
   document.getElementById('avatarOverlay').style.display = 'block';
-  // Auto-iniciar avatar
-  setTimeout(() => { if (!avatarSesionActiva) iniciarAvatar(); }, 800);
-  // Ocultar barra stats para más espacio
   const sb = document.getElementById('ariaStatsBar'); if(sb) sb.style.display='none';
+  setTimeout(() => { if (!avatarSesionActiva) iniciarAvatar(); }, 800);
 }
 function cerrarAvatar() {
   document.getElementById('avatarOverlay').style.display = 'none';
   detenerAvatar();
-  // Restaurar barra stats
   const sb2 = document.getElementById('ariaStatsBar'); if(sb2) sb2.style.display='flex';
 }
 
@@ -3009,34 +3007,99 @@ async function iniciarAvatar() {
   try {
     document.getElementById('btnIniciarAvatar').disabled = true;
     document.getElementById('btnIniciarAvatar').textContent = '⏳ Conectando…';
-    setAvatarStatus('Conectando…', '#fcd34d');
+    setAvatarStatus('Obteniendo sesión…', '#fcd34d');
 
-    // Crear sesión activa
-    const sesion = await crearConexionWebRTC(false);
-    avatarSesionActiva = sesion;
-    avatarSession      = sesion.session;
-    avatarPeerConn     = sesion.peerConn;
-    avatarDataChannel  = sesion.dataChannel;
+    // PASO 1: Obtener session_token del backend
+    const tokenRes = await fetch(LA_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatar: avatarSeleccionado })
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.session_token) throw new Error(tokenData.error || 'Sin token del backend');
 
-    document.getElementById('btnIniciarAvatar').style.display = 'none';
-    document.getElementById('btnDetenerAvatar').style.display = 'block';
+    setAvatarStatus('Iniciando sesión LiveKit…', '#fcd34d');
 
-    // Programar swap automático a los 4:30
-    programarSwap();
+    // PASO 2: Start session → LiveKit credentials
+    const startRes = await fetch('https://api.liveavatar.com/v1/sessions/start', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${tokenData.session_token}`, 'Content-Type': 'application/json' }
+    });
+    const startData = await startRes.json();
+    if (startData.code !== 1000) throw new Error(startData.message || 'Error start: ' + JSON.stringify(startData));
 
-    // Precarga backup en 15s (cuando el usuario ya ve el avatar)
-    setTimeout(() => precargarBackup(), 15000);
+    const { session_id, livekit_url, livekit_client_token, ws_url } = startData.data;
+    console.log('[Avatar] LiveKit URL:', livekit_url);
+
+    // PASO 3: Conectar a la sala LiveKit con el SDK
+    setAvatarStatus('Conectando sala…', '#fcd34d');
+    const room = new LivekitClient.Room({
+      adaptiveStream: true,
+      dynacast: true,
+    });
+
+    room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      if (track.kind === LivekitClient.Track.Kind.Video) {
+        const video = document.getElementById('avatarVideo');
+        const placeholder = document.getElementById('avatarPlaceholder');
+        track.attach(video);
+        video.style.display = 'block';
+        if (placeholder) placeholder.style.display = 'none';
+        setAvatarStatus('Avatar en vivo ✓', '#86efac');
+        document.getElementById('btnIniciarAvatar').style.display = 'none';
+        document.getElementById('btnDetenerAvatar').style.display = 'block';
+        console.log('[Avatar] ✅ Video en vivo conectado');
+      }
+      if (track.kind === LivekitClient.Track.Kind.Audio) {
+        track.attach(); // reproduce audio automáticamente
+      }
+    });
+
+    room.on(LivekitClient.RoomEvent.Disconnected, () => {
+      setAvatarStatus('Desconectado', '#f87171');
+      console.log('[Avatar] Room desconectado');
+    });
+
+    await room.connect(livekit_url, livekit_client_token);
+    console.log('[Avatar] Sala conectada:', room.name);
+
+    // Guardar referencia
+    avatarSesionActiva = { room, session_id, ws_url, livekit_url };
+    avatarSession = tokenData;
+
+    // PASO 4: WebSocket para enviar audio al avatar
+    if (ws_url) {
+      avatarWS = new WebSocket(ws_url + '?token=' + livekit_client_token);
+      avatarWS.onopen = () => {
+        console.log('[Avatar] WS abierto');
+        setAvatarStatus('Avatar listo ✓', '#86efac');
+      };
+      avatarWS.onmessage = (e) => {
+        try {
+          const ev = JSON.parse(e.data);
+          if (ev.type === 'session.state_updated') {
+            console.log('[Avatar] Estado:', ev.state);
+            if (ev.state === 'connected') setAvatarStatus('Avatar en vivo ✓', '#86efac');
+          }
+        } catch(_) {}
+      };
+      avatarWS.onerror = (e) => console.warn('[Avatar] WS error:', e);
+    }
 
     // Saludo inicial
     setTimeout(() => hablarAvatar('Hola. Avatar ARIA activado. Estoy contigo.'), 2000);
+
+    // Reconexión automática a los 4:30 min
+    programarSwap();
 
   } catch (err) {
     console.error('[Avatar] Error:', err);
     setAvatarStatus('Error: ' + err.message, '#f87171');
     document.getElementById('btnIniciarAvatar').disabled = false;
-    document.getElementById('btnIniciarAvatar').textContent = '▶ Iniciar Avatar';
+    document.getElementById('btnIniciarAvatar').textContent = '▶ Reintentar';
   }
 }
+
 
 // ─── DETENER AVATAR ───────────────────────────────────────────────
 function detenerAvatar() {
@@ -3073,15 +3136,15 @@ function detenerAvatar() {
 
 // ─── HACER HABLAR AL AVATAR ───────────────────────────────────────
 async function hablarAvatar(texto) {
-  // Si el avatar no está activo → TTS local con ElevenLabs/navegador
-  if (!avatarSession) {
+  if (!avatarSesionActiva && !avatarSession) {
     await reproducirTTS(texto);
     return;
   }
   try {
-    document.getElementById('avatarSpeakingBadge').style.display = 'block';
+    const badge = document.getElementById('avatarSpeakingBadge');
+    if (badge) badge.style.display = 'block';
 
-    // 1. Pedir TTS a ARIA proxy (OpenAI TTS nova)
+    // Obtener audio TTS via ElevenLabs (proxy)
     const ttsRes = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3089,36 +3152,42 @@ async function hablarAvatar(texto) {
     });
     const ttsData = await ttsRes.json();
 
-    if (ttsData.audio_b64) {
-      // 2. Enviar audio al avatar via LiveAvatar
-      try {
-        const sendRes = await fetch('https://api.liveavatar.com/v1/sessions/' + avatarSession.session_id + '/speak', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + avatarSession.session_token,
-          },
-          body: JSON.stringify({ audio: ttsData.audio_b64, format: 'mp3' }),
-        });
-        await sendRes.json();
-      } catch(laErr) {
-        // LiveAvatar falló — reproducir localmente
-        const audioUrl = await genVoz(texto);
-        if (audioUrl) { const a = new Audio(audioUrl); a.play().catch(()=>{}); }
-        else { hablarLocal(texto); }
-      }
+    if (ttsData.audio_b64 && avatarWS && avatarWS.readyState === WebSocket.OPEN) {
+      // Enviar al avatar via WebSocket LiveKit
+      // Formato: PCM 16-bit 24kHz Base64 — el proxy ya debe devolverlo
+      avatarWS.send(JSON.stringify({
+        type: 'agent.speak',
+        audio: ttsData.audio_b64
+      }));
+      avatarWS.send(JSON.stringify({
+        type: 'agent.speak_end',
+        event_id: 'speak_' + Date.now()
+      }));
+      console.log('[Avatar] Audio enviado por WS');
+    } else if (ttsData.audio_b64) {
+      // Reproducir localmente como fallback
+      const bytes = Uint8Array.from(atob(ttsData.audio_b64), c => c.charCodeAt(0));
+      const blob  = new Blob([bytes], { type: 'audio/mpeg' });
+      const url   = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.play();
     } else {
-      // No hay audio_b64 — TTS local completo
+      // ElevenLabs directo
       const audioUrl = await genVoz(texto);
-      if (audioUrl) { const a = new Audio(audioUrl); a.play().catch(()=>{}); }
-      else { hablarLocal(texto); }
+      if (audioUrl) {
+        const a = new Audio(audioUrl); 
+        a.play();
+      }
     }
-    setTimeout(() => { document.getElementById('avatarSpeakingBadge').style.display = 'none'; }, Math.max(3000, texto.length * 60));
+
   } catch(e) {
-    document.getElementById('avatarSpeakingBadge').style.display = 'none';
     console.error('[hablarAvatar]', e);
-    // Último fallback — siempre hablar
     await reproducirTTS(texto);
+  } finally {
+    setTimeout(() => {
+      const badge = document.getElementById('avatarSpeakingBadge');
+      if (badge) badge.style.display = 'none';
+    }, Math.max(2000, texto.length * 60));
   }
 }
 
