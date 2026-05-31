@@ -4056,8 +4056,24 @@ async function iniciarDemoEnVivo() {
     roi:         backendData.roi || { llamadas_perdidas:28, ingreso_perdido:8500, reactivacion:2800, ahorro_tiempo:600, total:11900, beneficio:10403, roi_pct:695 },
     landing_url: backendData.landing_url || null,
     propuesta_url: backendData.propuesta_url || null,
+    landing_html: backendData.landing_html || null,
+    propuesta_html: backendData.propuesta_html || null,
     agente_prompt: backendData.agente_prompt || ''
   };
+
+  // Crear Blob URLs para landing y propuesta si tenemos HTML
+  if (DR.landing_html && !DR.landing_url) {
+    try {
+      const blob = new Blob([DR.landing_html], {type:'text/html'});
+      DR.landing_url = URL.createObjectURL(blob);
+    } catch(e) {}
+  }
+  if (DR.propuesta_html && !DR.propuesta_url) {
+    try {
+      const blob = new Blob([DR.propuesta_html], {type:'text/html'});
+      DR.propuesta_url = URL.createObjectURL(blob);
+    } catch(e) {}
+  }
 
   actualizarPasoCarga('roi', 'ok', 35);
 
