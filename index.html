@@ -3006,100 +3006,127 @@ async function reconectarDesde0() {
 // ─── INICIAR AVATAR (punto de entrada) ────────────────────────────
 async function iniciarAvatar() {
   try {
-    document.getElementById('btnIniciarAvatar').disabled = true;
-    document.getElementById('btnIniciarAvatar').textContent = '⏳ Conectando…';
+    const btn = document.getElementById('btnIniciarAvatar');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Conectando…'; }
     setAvatarStatus('Obteniendo sesión…', '#fcd34d');
 
-    // PASO 1: Obtener session_token del backend
-    const tokenRes = await fetch(LA_TOKEN_URL, {
+    const AVATAR_IDS = {
+      ann:    'fc9c1f9f-bc99-4fd9-a6b2-8b4b5669a046',
+      aria:   'fc9c1f9f-bc99-4fd9-a6b2-8b4b5669a046',
+      judy:   '07faa1c4-b7e1-4d26-a38a-337364dee160',
+      shawn:  '7b888024-f8c9-4205-95e1-78ce01497bda',
+      doctor: 'bd43ce31-7425-4379-8407-60f029548e61',
+    };
+    const avatarId = AVATAR_IDS[avatarSeleccionado] || AVATAR_IDS.ann;
+
+    // PASO 1: Obtener session_token directamente de LiveAvatar
+    const t1 = await fetch('https://api.liveavatar.com/v1/sessions/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ avatar: avatarSeleccionado })
+      headers: { 'X-API-KEY': 'e1d4c768-49d4-11f1-8d28-066a7fa2e369', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        avatar_id: avatarId,
+        mode: 'LITE',
+        is_sandbox: false,
+        video_settings: { quality: 'medium', encoding: 'VP8' }
+      })
     });
-    const tokenData = await tokenRes.json();
-    if (!tokenData.session_token) throw new Error(tokenData.error || 'Sin token del backend');
+    const td = await t1.json();
+    console.log('[Avatar] Token response code:', td.code, td.message);
+    if (td.code !== 1000) throw new Error(td.message || 'Error token: ' + JSON.stringify(td));
 
-    setAvatarStatus('Iniciando sesión LiveKit…', '#fcd34d');
+    const sessionToken = td.data.session_token;
+    setAvatarStatus('Iniciando sesión…', '#fcd34d');
 
-    // PASO 2: Start session → LiveKit credentials
-    const startRes = await fetch('https://api.liveavatar.com/v1/sessions/start', {
+    // PASO 2: Start session
+    const t2 = await fetch('https://api.liveavatar.com/v1/sessions/start', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${tokenData.session_token}`, 'Content-Type': 'application/json' }
+      headers: { 'Authorization': 'Bearer ' + sessionToken, 'Content-Type': 'application/json' }
     });
-    const startData = await startRes.json();
-    if (startData.code !== 1000) throw new Error(startData.message || 'Error start: ' + JSON.stringify(startData));
+    const sd = await t2.json();
+    console.log('[Avatar] Start response code:', sd.code, sd.message, sd.data);
+    if (sd.code !== 1000) throw new Error(sd.message || 'Error start: ' + JSON.stringify(sd));
 
-    const { session_id, livekit_url, livekit_client_token, ws_url } = startData.data;
+    const { session_id, livekit_url, livekit_client_token, ws_url } = sd.data;
     console.log('[Avatar] LiveKit URL:', livekit_url);
+    console.log('[Avatar] WS URL:', ws_url);
 
-    // PASO 3: Conectar a la sala LiveKit con el SDK
+    // PASO 3: Conectar LiveKit
     setAvatarStatus('Conectando sala…', '#fcd34d');
-    const room = new LivekitClient.Room({
-      adaptiveStream: true,
-      dynacast: true,
-    });
+
+    if (typeof LivekitClient === 'undefined') {
+      throw new Error('SDK LiveKit no cargado');
+    }
+
+    const room = new LivekitClient.Room({ adaptiveStream: true, dynacast: true });
 
     room.on(LivekitClient.RoomEvent.TrackSubscribed, (track, publication, participant) => {
       if (track.kind === LivekitClient.Track.Kind.Video) {
         const video = document.getElementById('avatarVideo');
-        const placeholder = document.getElementById('avatarPlaceholder');
+        const ph = document.getElementById('avatarPlaceholder');
         track.attach(video);
         video.style.display = 'block';
-        if (placeholder) placeholder.style.display = 'none';
+        if (ph) ph.style.display = 'none';
         setAvatarStatus('Avatar en vivo ✓', '#86efac');
-        document.getElementById('btnIniciarAvatar').style.display = 'none';
-        document.getElementById('btnDetenerAvatar').style.display = 'block';
-        console.log('[Avatar] ✅ Video en vivo conectado');
+        const btnI = document.getElementById('btnIniciarAvatar');
+        const btnD = document.getElementById('btnDetenerAvatar');
+        if (btnI) btnI.style.display = 'none';
+        if (btnD) { btnD.style.display = 'block'; btnD.disabled = false; }
+        console.log('[Avatar] ✅ Video conectado');
       }
-      if (track.kind === LivekitClient.Track.Kind.Audio) {
-        track.attach(); // reproduce audio automáticamente
-      }
+      if (track.kind === LivekitClient.Track.Kind.Audio) track.attach();
     });
 
     room.on(LivekitClient.RoomEvent.Disconnected, () => {
       setAvatarStatus('Desconectado', '#f87171');
-      console.log('[Avatar] Room desconectado');
     });
 
     await room.connect(livekit_url, livekit_client_token);
-    console.log('[Avatar] Sala conectada:', room.name);
+    console.log('[Avatar] ✅ Sala conectada:', room.name);
 
-    // Guardar referencia
     avatarSesionActiva = { room, session_id, ws_url, livekit_url };
-    avatarSession = tokenData;
+    avatarSession = { session_id, session_token: sessionToken };
 
-    // PASO 4: WebSocket para enviar audio al avatar
+    // PASO 4: WebSocket para enviar PCM al avatar
     if (ws_url) {
-      avatarWS = new WebSocket(ws_url + '?token=' + livekit_client_token);
+      avatarWS = new WebSocket(ws_url);
       avatarWS.onopen = () => {
-        console.log('[Avatar] WS abierto');
+        console.log('[Avatar] WS abierto ✅');
         setAvatarStatus('Avatar listo ✓', '#86efac');
+        // Enviar keep-alive cada 30s
+        setInterval(() => {
+          if (avatarWS && avatarWS.readyState === WebSocket.OPEN) {
+            avatarWS.send(JSON.stringify({ type: 'session.keep_alive', event_id: 'ka_' + Date.now() }));
+          }
+        }, 30000);
+        // Saludo inmediato
+        setTimeout(() => hablarAvatar('Hola David. Soy ARIA. Estoy aquí contigo en tiempo real.'), 1000);
       };
       avatarWS.onmessage = (e) => {
         try {
           const ev = JSON.parse(e.data);
-          if (ev.type === 'session.state_updated') {
-            console.log('[Avatar] Estado:', ev.state);
-            if (ev.state === 'connected') setAvatarStatus('Avatar en vivo ✓', '#86efac');
-          }
+          console.log('[Avatar WS]', ev.type, ev.state || '');
         } catch(_) {}
       };
       avatarWS.onerror = (e) => console.warn('[Avatar] WS error:', e);
+      avatarWS.onclose = (e) => {
+        console.log('[Avatar] WS cerrado:', e.code, e.reason);
+        setAvatarStatus('WS cerrado', '#f87171');
+      };
+    } else {
+      setAvatarStatus('Avatar en vivo ✓ (sin WS)', '#86efac');
+      setTimeout(() => hablarAvatar('Hola David. Soy ARIA.'), 1000);
     }
 
-    // Saludo inicial
-    setTimeout(() => hablarAvatar('Hola. Avatar ARIA activado. Estoy contigo.'), 2000);
-
-    // Reconexión automática a los 4:30 min
     programarSwap();
 
   } catch (err) {
     console.error('[Avatar] Error:', err);
-    setAvatarStatus('Error: ' + err.message, '#f87171');
-    document.getElementById('btnIniciarAvatar').disabled = false;
-    document.getElementById('btnIniciarAvatar').textContent = '▶ Reintentar';
+    setAvatarStatus('❌ ' + err.message, '#f87171');
+    const btn = document.getElementById('btnIniciarAvatar');
+    if (btn) { btn.disabled = false; btn.textContent = '▶ Reintentar'; btn.style.display = 'block'; }
   }
 }
+
 
 
 // ─── DETENER AVATAR ───────────────────────────────────────────────
@@ -3375,7 +3402,7 @@ function setAvatarStatus(msg, color) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const DEMO_URL   = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaDemoLive';
-const PROXY_URL  = 'https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/davidProxy';
+// PROXY_URL ya definida arriba → davidProxy
 
 let modoDemoActivo = false;
 let demoImagenes = [];
