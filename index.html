@@ -3984,17 +3984,18 @@ Lo que ves en pantalla va a ser real, con datos de tu negocio. Dame un momento.`
 
   // Datos reales del backend (o estimados si falla)
   const datosReales = {
-    rating:       backendData.rating       || '4.7★',
+    rating:       backendData.rating       || 4.7,
     resenas:      backendData.resenas      || '38',
     telefono:     backendData.telefono     || '',
     web:          backendData.web          || '',
     servicios:    backendData.servicios    || ['implantes','ortodoncia','blanqueamiento'],
-    competidores: backendData.competidores || '7',
-    leads_mes:    backendData.leads_mes    || clientes,
-    leads_perdidos: backendData.leads_perdidos || Math.round(clientes * 0.3),
-    roi_mes:      backendData.roi?.beneficio_neto_mes || '12.400',
-    landing:      backendData.construido?.landing || null,
-    propuesta:    backendData.construido?.propuesta || null
+    leads_perdidos: backendData.roi?.llamadas_perdidas || Math.round(clientes * 0.3),
+    roi_mes:      backendData.roi?.beneficio || backendData.roi?.beneficio_neto_mes || 10076,
+    landing:      backendData.landing_url  || backendData.construido?.landing?.url || null,
+    propuesta:    backendData.propuesta_url || backendData.construido?.propuesta?.url || null,
+    agente_prompt: backendData.agente_prompt || '',
+    nombre_real:   backendData.nombre_real  || clinica,
+    aria_mensaje:  backendData.aria_mensaje || ''
   };
 
   // Mostrar datos encontrados brevemente
@@ -4095,21 +4096,26 @@ Lo que ves en pantalla va a ser real, con datos de tu negocio. Dame un momento.`
 function mostrarResultadosFinal(data, clinica, ciudad) {
   const roi = data.roi || {};
   const c   = data.construido || {};
-  const roi_mes = roi.beneficio_neto_mes ? '€' + Number(roi.beneficio_neto_mes).toLocaleString() : '€12.400+';
+  // Soporte v2 y v3 del backend
+  const landingUrl   = data.landing_url   || (c.landing   && c.landing.url)   || null;
+  const propuestaUrl = data.propuesta_url || (c.propuesta && c.propuesta.url)  || null;
+  const roi_mes = roi.beneficio ? '€' + Number(roi.beneficio).toLocaleString() 
+                : (roi.beneficio_neto_mes ? '€' + Number(roi.beneficio_neto_mes).toLocaleString() : '€10.000+');
   const roi_pct = roi.roi_pct ? roi.roi_pct + '% ROI' : 'Alto ROI';
-  const landingUrl   = c.landing   || null;
-  const propuestaUrl = c.propuesta || null;
+  // Guardar HTML generado para abrir en navegador si storage falla
+  window._demoLandingHTML   = data.landing_html   || null;
+  window._demoPropuestaHTML = data.propuesta_html || null;
 
   const cards = [
     { emoji:'💰', titulo:'ROI Mensual',     valor:roi_mes,    sub:roi_pct,           color:'#86efac', bg:'rgba(0,255,136,.08)',   border:'rgba(0,255,136,.25)',   url:null },
     { emoji:'🤖', titulo:'Agente WhatsApp', valor:'✅ Listo', sub:'Entrenado para '+clinica, color:'#a78bfa', bg:'rgba(139,92,246,.08)', border:'rgba(139,92,246,.25)',  url:null },
-    { emoji:'🌐', titulo:'Landing Page',    valor:'✅ Online',sub:'Ver →',            color:'#60a5fa', bg:'rgba(59,130,246,.08)', border:'rgba(59,130,246,.25)',   url:landingUrl },
-    { emoji:'📄', titulo:'Propuesta',       valor:'✅ Lista', sub:'Descargar →',      color:'#fbbf24', bg:'rgba(245,158,11,.08)', border:'rgba(245,158,11,.25)',  url:propuestaUrl },
+    { emoji:'🌐', titulo:'Landing Page',    valor:'✅ Online',sub:'Ver →',            color:'#60a5fa', bg:'rgba(59,130,246,.08)', border:'rgba(59,130,246,.25)',   url:landingUrl, htmlKey:'Landing' },
+    { emoji:'📄', titulo:'Propuesta',       valor:'✅ Lista', sub:'Ver propuesta →',  color:'#fbbf24', bg:'rgba(245,158,11,.08)', border:'rgba(245,158,11,.25)',  url:propuestaUrl, htmlKey:'Propuesta' },
   ];
 
   const boxCards = document.getElementById('demoCards');
   boxCards.innerHTML = cards.map(c =>
-    `<div onclick="${c.url?`window.open('${c.url}','_blank')`:'void(0)'}" style="background:${c.bg};border:1px solid ${c.border};border-radius:14px;padding:14px;cursor:${c.url?'pointer':'default'};transition:transform .2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+    `<div onclick="${c.url ? `window.open('${c.url}','_blank')` : c.htmlKey ? `abrirHTMLLocal(window['_demo'+c.htmlKey+'HTML'])` : 'void(0)'}" style="background:${c.bg};border:1px solid ${c.border};border-radius:14px;padding:14px;cursor:${c.url?'pointer':'default'};transition:transform .2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
       <div style="font-size:22px;margin-bottom:6px;">${c.emoji}</div>
       <div style="color:${c.color};font-weight:800;font-size:15px;">${c.valor}</div>
       <div style="color:#9ca3af;font-size:11px;margin-top:3px;">${c.titulo}</div>
