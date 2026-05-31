@@ -144,11 +144,12 @@ body{color:var(--t);font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-se
 #panelChat, #panelDemo {
   position:absolute; inset:0; display:flex; flex-direction:column;
   overflow:hidden; transition:opacity .15s, visibility .15s;
+  width:100%; height:100%;
 }
 #panelChat { opacity:1; visibility:visible; z-index:10; }
-#panelDemo { opacity:0; visibility:hidden; z-index:0; background:#07070f; }
-#panelDemo.activo { opacity:1; visibility:visible; z-index:10; }
-#panelChat.oculto { opacity:0; visibility:hidden; z-index:0; }
+#panelDemo { opacity:0; visibility:hidden; z-index:0; background:#07070f; pointer-events:none; overflow-y:auto; }
+#panelDemo.activo { opacity:1; visibility:visible; z-index:10; pointer-events:all; display:flex; overflow-y:auto; }
+#panelChat.oculto { opacity:0; visibility:hidden; z-index:0; pointer-events:none; }
 
 /* ── MODO REUNIÓN ── */
 .meet-panel{display:none;position:fixed;inset:0;z-index:400;background:rgba(2,4,8,.98);flex-direction:column;}
@@ -1039,7 +1040,7 @@ const ARIA_CONTEXTO = {
   memoria: []
 };
 
-async function gpt(msgs,max=500,modoOverride=null){
+async function gpt(msgs,max=1200,modoOverride=null){
   const ultimoMsg = msgs.filter(m=>m.role==='user').slice(-1)[0]?.content || '';
   historialCompleto.push({role:'user', content:ultimoMsg});
   contadorMensajes++;
@@ -1079,7 +1080,7 @@ async function gptVision(b64,prompt){
   const r=await fetch('https://api.openai.com/v1/chat/completions',{
     method:'POST',
     headers:{'Authorization':`Bearer ${CFG.openai}`,'Content-Type':'application/json'},
-    body:JSON.stringify({model:'gpt-4o',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:`data:image/jpeg;base64,${b64}`}}]}],max_tokens:350})
+    body:JSON.stringify({model:'gpt-4o',messages:[{role:'user',content:[{type:'text',text:prompt},{type:'image_url',image_url:{url:`data:image/jpeg;base64,${b64}`}}]}],max_tokens:800})
   });
   const d=await r.json();
   if(!r.ok)throw new Error(d.error?.message);
@@ -1096,7 +1097,7 @@ async function enviar(){
   addMsg(txt,'user');hist.push({role:'user',content:txt});
   showTyping();
   try{
-    const resp=await gpt([{role:'system',content:SYS},...hist.slice(-16)],520);
+    const resp=await gpt([{role:'system',content:SYS},...hist.slice(-16)],1200);
     hist.push({role:'assistant',content:resp});
     hideTyping();
     const url=await genVoz(resp);
@@ -3084,24 +3085,34 @@ async function hablarAvatar(texto) {
 
     if (ttsData.audio_b64) {
       // 2. Enviar audio al avatar via LiveAvatar
-      const sendRes = await fetch('https://api.liveavatar.com/v1/sessions/' + avatarSession.session_id + '/speak', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + avatarSession.session_token,
-        },
-        body: JSON.stringify({ audio: ttsData.audio_b64, format: 'mp3' }),
-      });
-      await sendRes.json();
+      try {
+        const sendRes = await fetch('https://api.liveavatar.com/v1/sessions/' + avatarSession.session_id + '/speak', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + avatarSession.session_token,
+          },
+          body: JSON.stringify({ audio: ttsData.audio_b64, format: 'mp3' }),
+        });
+        await sendRes.json();
+      } catch(laErr) {
+        // LiveAvatar falló — reproducir localmente
+        const audioUrl = await genVoz(texto);
+        if (audioUrl) { const a = new Audio(audioUrl); a.play().catch(()=>{}); }
+        else { hablarLocal(texto); }
+      }
     } else {
-      // Fallback: reproducir audio localmente sin mover labios
-      const audio = new Audio('data:audio/mp3;base64,' + (ttsData.audio_b64 || ''));
-      audio.play().catch(()=>{});
+      // No hay audio_b64 — TTS local completo
+      const audioUrl = await genVoz(texto);
+      if (audioUrl) { const a = new Audio(audioUrl); a.play().catch(()=>{}); }
+      else { hablarLocal(texto); }
     }
-    setTimeout(() => { document.getElementById('avatarSpeakingBadge').style.display = 'none'; }, 4000);
+    setTimeout(() => { document.getElementById('avatarSpeakingBadge').style.display = 'none'; }, Math.max(3000, texto.length * 60));
   } catch(e) {
     document.getElementById('avatarSpeakingBadge').style.display = 'none';
     console.error('[hablarAvatar]', e);
+    // Último fallback — siempre hablar
+    await reproducirTTS(texto);
   }
 }
 
@@ -3152,6 +3163,16 @@ async function enviarAAvatar() {
 
 async function reproducirTTS(texto) {
   const txtLimpio = limpiarParaVoz(texto);
+  // 1. Intentar ElevenLabs directo (mejor calidad)
+  try {
+    const audioUrl = await genVoz(txtLimpio);
+    if (audioUrl) {
+      const a = new Audio(audioUrl);
+      a.play().catch(()=>{ hablarNavegador(txtLimpio); });
+      return;
+    }
+  } catch(e) { console.warn('[TTS-Eleven]', e); }
+  // 2. Intentar proxy ARIA (OpenAI TTS nova)
   try {
     const res = await fetch(PROXY_URL, {
       method: 'POST',
@@ -3164,8 +3185,8 @@ async function reproducirTTS(texto) {
       audio.play().catch(()=>{ hablarNavegador(txtLimpio); });
       return;
     }
-  } catch(e) { console.error('[TTS]', e); }
-  // Fallback: voz del navegador
+  } catch(e) { console.error('[TTS-Proxy]', e); }
+  // 3. Fallback: voz del navegador
   hablarNavegador(txtLimpio);
 }
 
@@ -3326,10 +3347,22 @@ function toggleModoDemo() {
   if (modoDemoActivo) {
     panelChat.classList.add('oculto');
     panelDemo.classList.add('activo');
+    // Asegurarse que el formulario es visible (no el panel de build)
+    const fp = document.getElementById('demoFormPanel');
+    const bp = document.getElementById('demoBuildPanel');
+    const dr = document.getElementById('demoResultados');
+    if (fp) fp.style.display = 'flex';
+    if (bp) bp.style.display = 'none';
+    if (dr) dr.style.display = 'none';
     btn.style.background = 'rgba(0,255,136,.2)';
     btn.style.borderColor = 'rgba(0,255,136,.6)';
     btn.textContent = '💬 Chat';
-    if (typeof avatarSession !== 'undefined' && avatarSession) hablarAvatar('Perfecto. Modo demo activo. Rellena los datos de la clínica y construyo el sistema completo en vivo delante de ti.');
+    const msgDemo = 'Perfecto. Modo demo activo. Rellena los datos de la clínica y construyo el sistema completo en vivo delante de ti.';
+    if (typeof avatarSession !== 'undefined' && avatarSession) {
+      hablarAvatar(msgDemo);
+    } else {
+      reproducirTTS(msgDemo);
+    }
   } else {
     panelDemo.classList.remove('activo');
     panelChat.classList.remove('oculto');
