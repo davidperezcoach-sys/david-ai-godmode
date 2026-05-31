@@ -483,6 +483,33 @@ const estado = {
   cargarStats();
   simularOnline();
   setInterval(cargarStats, 5 * 60 * 1000);
+
+  // Auto-inicio por URL params: ?negocio=Inboca&ciudad=Elda&persona=Sandra&demo=1
+  const params = new URLSearchParams(window.location.search);
+  const negocioParam = params.get('negocio') || params.get('n');
+  const ciudadParam  = params.get('ciudad')  || params.get('c');
+  const personaParam = params.get('persona') || params.get('p') || 'Sandra';
+  const autoDemo     = params.get('demo') === '1' || params.get('demo') === 'true';
+
+  if (negocioParam) {
+    // Pre-rellenar formulario
+    setTimeout(() => {
+      const inNombre  = document.getElementById('inputNombre');
+      const inNegocio = document.getElementById('inputNegocio');
+      const inCiudad  = document.getElementById('inputCiudad');
+      if (inNombre)  inNombre.value  = personaParam;
+      if (inNegocio) inNegocio.value = negocioParam;
+      if (inCiudad)  inCiudad.value  = ciudadParam || '';
+      
+      if (autoDemo) {
+        // Entrar automáticamente y arrancar demo
+        setTimeout(async () => {
+          await entrar();
+          setTimeout(() => iniciarDemo(), 2000);
+        }, 500);
+      }
+    }, 300);
+  }
 })();
 
 async function cargarStats() {
