@@ -812,6 +812,7 @@ textarea::placeholder{color:var(--td);}
 const CFG = {
   openai:  localStorage.getItem('aria_oai') || '',
   eleven:  localStorage.getItem('aria_el') || '',
+  eleven2: '',
   voiceId: localStorage.getItem('aria_vid') || 'FsnoTnJuciO7Wzi8XmLr',
   nombre:  localStorage.getItem('aria_nom') || 'David',
   contexto:`Soy David Pérez, fundador de:
@@ -963,19 +964,29 @@ function hablarNavegador(texto){
 }
 
 async function genVoz(texto){
-  if(!CFG.eleven||!CFG.voiceId)return null;
-  try{
-    const txc=limpiarParaVoz(texto); const txt=txc.length>4000?txc.slice(0,3990)+'...':txc;
-    const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${CFG.voiceId}`,{
-      method:'POST',
-      headers:{'xi-api-key':CFG.eleven,'Content-Type':'application/json','Accept':'audio/mpeg'},
-      body:JSON.stringify({text:txt,model_id:'eleven_turbo_v2_5',voice_settings:{stability:0.5,similarity_boost:0.85}})
-    });
-    if(!r.ok)return null;
-    const blob=await r.blob();
-    return blob.size>500?URL.createObjectURL(blob):null;
-  }catch(e){return null;}
+  if(!CFG.voiceId) return null;
+  const keys = [CFG.eleven, CFG.eleven2, '', ''].filter(k => k && k.length > 10);
+  const txt = limpiarParaVoz(texto);
+  const body = JSON.stringify({
+    text: txt.length > 4000 ? txt.slice(0,3990)+'...' : txt,
+    model_id: 'eleven_turbo_v2_5',
+    voice_settings: {stability:0.5, similarity_boost:0.85}
+  });
+  for (const key of keys) {
+    try {
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${CFG.voiceId}`, {
+        method: 'POST',
+        headers: {'xi-api-key': key, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg'},
+        body
+      });
+      if (!r.ok) continue;
+      const blob = await r.blob();
+      if (blob.size > 500) return URL.createObjectURL(blob);
+    } catch(e) { continue; }
+  }
+  return null; // todas las keys fallaron
 }
+
 
 async function hablar(texto){
   if(!vozOn)return;
