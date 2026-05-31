@@ -3592,17 +3592,50 @@ function abrirAgenteLive(clinica, ciudad, doctor) {
   // Animar entrada
   panel.style.animation = 'wIn .4s ease';
   
-  // Scroll automático al panel del agente
+  // PAUSAR la demo mientras el usuario prueba el agente
+  window._demoPausada = true;
+
+  // Expandir el agente a pantalla completa dentro del panel
+  const panelAgente = document.getElementById('panelAgenteLive');
+  panelAgente.style.maxHeight = 'none';
+  panelAgente.style.flex = '1';
+  panelAgente.style.overflow = 'auto';
+
+  // Ocultar los pasos de construcción para dar protagonismo al agente
+  const demoPasosEl = document.getElementById('demoPasos');
+  if (demoPasosEl) demoPasosEl.style.maxHeight = '120px';
+
+  // Botón "Continuar demo"
+  const buildHeader = document.querySelector('#demoBuildPanel > div:first-child');
+  if (buildHeader && !document.getElementById('btnContinuarDemo')) {
+    const btn = document.createElement('button');
+    btn.id = 'btnContinuarDemo';
+    btn.onclick = continuarDemo;
+    btn.style.cssText = 'background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;animation:pulse 2s infinite;';
+    btn.textContent = '▶ Continuar demo';
+    buildHeader.appendChild(btn);
+  }
+
   setTimeout(() => {
-    const panel = document.getElementById('panelAgenteLive');
-    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    panelAgente.scrollIntoView({ behavior: 'smooth', block: 'start' });
     document.getElementById('agenteMsg')?.focus();
   }, 400);
 }
 
 function cerrarAgenteLive() {
-  document.getElementById('panelAgenteLive').style.display = 'none';
+  // Ocultar panel pero dejar el chat del agente accesible al final
+  const panel = document.getElementById('panelAgenteLive');
+  panel.style.display = 'none';
+  panel.style.maxHeight = '260px';
+  panel.style.flex = '0 0 auto';
   agenteHistorial = [];
+
+  // Restaurar scroll de pasos
+  const demoPasosEl = document.getElementById('demoPasos');
+  if (demoPasosEl) demoPasosEl.style.maxHeight = '';
+
+  // Reanudar demo si estaba pausada
+  continuarDemo();
 }
 
 function setModoAgente(modo) {
@@ -3803,6 +3836,8 @@ function resetDemo() {
   document.getElementById('demoPasos').innerHTML = '';
   setProgress(0);
   demoImagenes = [];
+  window._demoPausada = false;
+  window._demoResolver = null;
 }
 
 // ── Pasos con prompt de imagen ────────────────────────────────────────────
@@ -4021,6 +4056,15 @@ Lo que ves en pantalla va a ser real, con datos de tu negocio. Dame un momento.`
   // ── FASE 2: Cierre con resultados ────────────────────────────────────
   mostrarResultadosFinal(backendData, clinica, ciudad);
 
+  // Reabrir el agente como panel de prueba al final (sin pausar)
+  setTimeout(() => {
+    abrirAgenteLive(clinica, ciudad, nombre);
+    window._demoPausada = false; // no pausar — ya terminó la demo
+    // Restaurar tamaño normal del agente
+    const pa = document.getElementById('panelAgenteLive');
+    if (pa) { pa.style.maxHeight = '300px'; pa.style.flex = '0 0 auto'; }
+  }, 2000);
+
   // Esperar vídeo HeyGen si está generándose
   if (videoHeygenId && videoHeygenId !== 'generando') {
     const finVoz = `Tu sistema está completo. El vídeo personalizado de ${clinica} se está generando ahora mismo — en 2-3 minutos lo tienes en tu email. Mientras tanto, aquí tienes todo lo que hemos construido hoy. ¿Qué te parece? ¿Tienes alguna duda antes de activarlo?`;
@@ -4112,6 +4156,23 @@ function mostrarResultadosFinal(data, clinica, ciudad) {
 }
 
 // ── LANZAR CIERRE CON VIDEO HEYGEN ────────────────────────────────────────
+// Espera si la demo está pausada
+async function esperarSiPausada() {
+  if (!window._demoPausada) return;
+  await new Promise(resolve => { window._demoResolver = resolve; });
+}
+
+// Botón continuar demo
+function continuarDemo() {
+  window._demoPausada = false;
+  const btn = document.getElementById('btnContinuarDemo');
+  if (btn) btn.remove();
+  if (window._demoResolver) {
+    window._demoResolver();
+    window._demoResolver = null;
+  }
+}
+
 async function lanzarCierreDemo() {
   const btn = document.getElementById('btn-cierre-demo');
   const status = document.getElementById('cierre-status');
