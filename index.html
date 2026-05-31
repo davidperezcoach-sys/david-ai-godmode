@@ -964,7 +964,7 @@ function hablarNavegador(texto){
 async function genVoz(texto){
   if(!CFG.eleven||!CFG.voiceId)return null;
   try{
-    const txc=limpiarParaVoz(texto); const txt=txc.length>2500?txc.slice(0,2490)+'...':txc;
+    const txc=limpiarParaVoz(texto); const txt=txc.length>4000?txc.slice(0,3990)+'...':txc;
     const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${CFG.voiceId}`,{
       method:'POST',
       headers:{'xi-api-key':CFG.eleven,'Content-Type':'application/json','Accept':'audio/mpeg'},
