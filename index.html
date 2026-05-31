@@ -2620,7 +2620,8 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
           <input id="avatarInput" type="text" placeholder="Escribe a ARIA…" onkeydown="if(event.key==='Enter')enviarAAvatar()"
             style="flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(139,92,246,.3);border-radius:12px;padding:11px 16px;color:#fff;font-size:14px;outline:none;" />
           <button onclick="enviarAAvatar()" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border:none;border-radius:12px;padding:11px 18px;font-size:14px;cursor:pointer;font-weight:700;">→</button>
-          <button id="btnMicAvatar" onclick="toggleMicAvatar()" style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;border-radius:12px;padding:11px 14px;font-size:16px;cursor:pointer;">🎙️</button>
+          <button id="btnMicAvatar" onclick="toggleMicAvatar()" title="Pulsar para hablar" style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;border-radius:12px;padding:11px 14px;font-size:16px;cursor:pointer;">🎙️</button>
+          <button id="btnConvContinua" onclick="toggleConvContinua()" title="Conversación continua — ARIA te escucha siempre" style="background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.3);color:#67e8f9;border-radius:12px;padding:11px 14px;font-size:16px;cursor:pointer;">🔄</button>
         </div>
         <div id="avatarMicStatus" style="color:#7c6fa0;font-size:11px;padding:0 20px 10px;text-align:center;min-height:18px;"></div>
       </div>
@@ -3164,15 +3165,17 @@ function detenerAvatar() {
 
 // ─── HACER HABLAR AL AVATAR ───────────────────────────────────────
 async function hablarAvatar(texto) {
+  // Si el avatar NO está activo → TTS normal
   if (!avatarSesionActiva && !avatarSession) {
     await reproducirTTS(texto);
     return;
   }
-  try {
-    const badge = document.getElementById('avatarSpeakingBadge');
-    if (badge) badge.style.display = 'block';
 
-    // 1. Obtener PCM 16-bit 24kHz — formato que LiveAvatar necesita
+  const badge = document.getElementById('avatarSpeakingBadge');
+  if (badge) badge.style.display = 'block';
+
+  try {
+    // PCM 16-bit 24kHz — lo que LiveAvatar necesita por WS
     const ttsRes = await fetch(AVATAR_TTS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3181,63 +3184,44 @@ async function hablarAvatar(texto) {
     const ttsData = await ttsRes.json();
 
     if (ttsData.audio_b64 && avatarWS && avatarWS.readyState === WebSocket.OPEN) {
-      // 2. Enviar PCM al avatar via WebSocket — el avatar mueve la boca en sincronía
-      const eventId = 'speak_' + Date.now();
-      avatarWS.send(JSON.stringify({ type: 'agent.speak', audio: ttsData.audio_b64, event_id: eventId }));
-      avatarWS.send(JSON.stringify({ type: 'agent.speak_end', event_id: eventId }));
-      console.log('[Avatar] PCM enviado por WS, chars:', ttsData.audio_b64.length);
-
-      // 3. Reproducir audio localmente también para que David lo escuche
-      try {
-        const bytes = Uint8Array.from(atob(ttsData.audio_b64 || ''), c => c.charCodeAt(0));
-        // PCM → reproducir via AudioContext
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-        const pcmData = new Int16Array(bytes.buffer);
-        const floatData = new Float32Array(pcmData.length);
-        for (let j = 0; j < pcmData.length; j++) floatData[j] = pcmData[j] / 32768.0;
-        const buffer = audioCtx.createBuffer(1, floatData.length, 24000);
-        buffer.copyToChannel(floatData, 0);
-        const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioCtx.destination);
-        source.start();
-      } catch(audioErr) {
-        console.warn('[Avatar] Audio local fallback:', audioErr);
-        await genVoz(texto).then(url => url && new Audio(url).play());
+      // Enviar en chunks de ~1 segundo para que el avatar mueva la boca en tiempo real
+      const b64 = ttsData.audio_b64;
+      const CHUNK = 48000; // ~1s de PCM 16-bit 24kHz en chars base64
+      for (let start = 0; start < b64.length; start += CHUNK) {
+        const chunk = b64.slice(start, start + CHUNK);
+        avatarWS.send(JSON.stringify({ type: 'agent.speak', audio: chunk, event_id: 'spk_' + Date.now() }));
+        await new Promise(r => setTimeout(r, 50)); // pequeña pausa entre chunks
       }
+      avatarWS.send(JSON.stringify({ type: 'agent.speak_end', event_id: 'end_' + Date.now() }));
+      console.log('[Avatar] ✅ PCM enviado en chunks al WS');
+      // El stream LiveKit reproduce el audio automáticamente — no hace falta AudioContext local
     } else if (ttsData.audio_b64) {
-      // WS no disponible — reproducir localmente el PCM
-      console.warn('[Avatar] WS no disponible, reproduciendo PCM local');
-      try {
-        const bytes = Uint8Array.from(atob(ttsData.audio_b64), c => c.charCodeAt(0));
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
-        const pcmData = new Int16Array(bytes.buffer);
-        const floatData = new Float32Array(pcmData.length);
-        for (let j = 0; j < pcmData.length; j++) floatData[j] = pcmData[j] / 32768.0;
-        const buffer = audioCtx.createBuffer(1, floatData.length, 24000);
-        buffer.copyToChannel(floatData, 0);
-        const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioCtx.destination);
-        source.start();
-      } catch(e) { await reproducirTTS(texto); }
+      // WS no disponible — reproducir PCM local
+      const bytes = Uint8Array.from(atob(ttsData.audio_b64), c => c.charCodeAt(0));
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+      const pcm = new Int16Array(bytes.buffer);
+      const f32 = new Float32Array(pcm.length);
+      for (let j = 0; j < pcm.length; j++) f32[j] = pcm[j] / 32768;
+      const buf = audioCtx.createBuffer(1, f32.length, 24000);
+      buf.copyToChannel(f32, 0);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf; src.connect(audioCtx.destination); src.start();
     } else {
-      // Sin PCM — ElevenLabs directo
-      const audioUrl = await genVoz(texto);
-      if (audioUrl) { new Audio(audioUrl).play(); }
-      else { await reproducirTTS(texto); }
+      // Fallback ElevenLabs
+      const url = await genVoz(texto);
+      if (url) new Audio(url).play();
+      else await reproducirTTS(texto);
     }
-
   } catch(e) {
     console.error('[hablarAvatar]', e);
     await reproducirTTS(texto);
   } finally {
     setTimeout(() => {
-      const badge = document.getElementById('avatarSpeakingBadge');
       if (badge) badge.style.display = 'none';
     }, Math.max(2000, texto.length * 65));
   }
 }
+
 
 
 // ─── CHAT CON ARIA ────────────────────────────────────────────────
@@ -3324,52 +3308,139 @@ function toggleMicAvatar() {
 function iniciarMicAvatar() {
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     avatarMicActivo = true;
-    document.getElementById('btnMicAvatar').style.background = 'rgba(239,68,68,.3)';
-    document.getElementById('btnMicAvatar').style.color = '#f87171';
-    document.getElementById('avatarMicStatus').textContent = '🔴 Grabando… suelta para enviar';
+    const btn = document.getElementById('btnMicAvatar');
+    if (btn) { btn.style.background = 'rgba(239,68,68,.3)'; btn.style.color = '#f87171'; btn.textContent = '⏹️'; }
+    document.getElementById('avatarMicStatus').textContent = '🔴 Grabando… pulsa ⏹️ para enviar';
 
     avatarMicRec = new MediaRecorder(stream, { mimeType: 'audio/webm' });
     const chunks = [];
-    avatarMicRec.ondataavailable = e => chunks.push(e.data);
+    avatarMicRec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
     avatarMicRec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
       const blob = new Blob(chunks, { type: 'audio/webm' });
       const reader = new FileReader();
       reader.onloadend = async () => {
         const b64 = reader.result.split(',')[1];
-        document.getElementById('avatarMicStatus').textContent = '⚡ Procesando…';
+        document.getElementById('avatarMicStatus').textContent = '⚡ Transcribiendo…';
         try {
-          // Transcribir con Whisper via proxy
-          const res = await fetch(PROXY_URL, {
+          // Transcribir con Whisper via ariaAgenteDemo
+          const res = await fetch(AVATAR_TTS_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ modo: 'voz', audio_b64: b64, messages: avatarHistorial.slice(-6) })
+            body: JSON.stringify({ modo: 'voz', audio_b64: b64, historial: avatarHistorial.slice(-4) })
           });
           const data = await res.json();
-          const texto = data.texto_usuario || data.texto || data.transcripcion || '';
-          if (texto) {
+          const texto = data.texto_usuario || data.texto || data.transcripcion || data.text || '';
+          if (texto && texto.trim().length > 1) {
             document.getElementById('avatarInput').value = texto;
-            document.getElementById('avatarMicStatus').textContent = '✓ ' + texto.slice(0,50);
+            document.getElementById('avatarMicStatus').textContent = '✓ ' + texto.slice(0, 60);
             enviarAAvatar();
+          } else {
+            document.getElementById('avatarMicStatus').textContent = '⚠️ No entendí. Intenta de nuevo.';
           }
         } catch(e) {
-          document.getElementById('avatarMicStatus').textContent = '❌ Error transcribiendo';
+          document.getElementById('avatarMicStatus').textContent = '❌ Error: ' + e.message;
         }
-        stream.getTracks().forEach(t => t.stop());
       };
       reader.readAsDataURL(blob);
     };
     avatarMicRec.start();
   }).catch(() => {
-    document.getElementById('avatarMicStatus').textContent = '❌ Sin acceso al micrófono';
+    document.getElementById('avatarMicStatus').textContent = '❌ Sin acceso al micrófono — permite en el navegador';
   });
 }
+
 
 function pararMicAvatar() {
   if (avatarMicRec && avatarMicRec.state === 'recording') avatarMicRec.stop();
   avatarMicActivo = false;
-  document.getElementById('btnMicAvatar').style.background = 'rgba(139,92,246,.15)';
-  document.getElementById('btnMicAvatar').style.color = '#a78bfa';
+  const btn = document.getElementById('btnMicAvatar');
+  if (btn) { btn.style.background = 'rgba(139,92,246,.15)'; btn.style.color = '#a78bfa'; btn.textContent = '🎙️'; }
 }
+
+// ─── CONVERSACIÓN CONTINUA — ARIA escucha siempre ────────────────
+let convContinuaOn = false;
+let reconAvatar    = null;
+
+function toggleConvContinua() {
+  if (convContinuaOn) {
+    detenerConvContinua();
+  } else {
+    iniciarConvContinua();
+  }
+}
+
+function iniciarConvContinua() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('avatarMicStatus').textContent = '⚠️ Usa Chrome o Safari';
+    return;
+  }
+  convContinuaOn = true;
+  const btn = document.getElementById('btnConvContinua');
+  if (btn) { btn.style.background = 'rgba(239,68,68,.3)'; btn.style.color = '#f87171'; btn.textContent = '🔴'; }
+  document.getElementById('avatarMicStatus').textContent = '🎤 ARIA te escucha — habla cuando quieras';
+
+  reconAvatar = new SR();
+  reconAvatar.lang = 'es-ES';
+  reconAvatar.continuous = true;
+  reconAvatar.interimResults = true;
+  reconAvatar.maxAlternatives = 1;
+
+  let silenceTimer = null;
+  let buffered = '';
+
+  reconAvatar.onresult = (event) => {
+    let interim = '', final = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) final += t;
+      else interim += t;
+    }
+    const todo = (buffered + ' ' + (final || interim)).trim();
+    document.getElementById('avatarMicStatus').textContent = '🎤 ' + (todo.slice(-60) || 'Escuchando...');
+
+    if (final) {
+      buffered = (buffered + ' ' + final).trim();
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        if (buffered.trim().length > 2) {
+          const msg = buffered.trim();
+          buffered = '';
+          document.getElementById('avatarInput').value = msg;
+          document.getElementById('avatarMicStatus').textContent = '⚡ Enviando: ' + msg.slice(0, 50);
+          enviarAAvatar();
+        }
+      }, 1200); // 1.2s de silencio → envía
+    }
+  };
+
+  reconAvatar.onerror = (e) => {
+    if (e.error === 'no-speech') return;
+    if (e.error === 'not-allowed') {
+      document.getElementById('avatarMicStatus').textContent = '❌ Permite el micrófono en el navegador';
+      detenerConvContinua(); return;
+    }
+    if (convContinuaOn) setTimeout(() => { try { reconAvatar.start(); } catch(_) {} }, 500);
+  };
+
+  reconAvatar.onend = () => {
+    if (convContinuaOn) setTimeout(() => { try { reconAvatar.start(); } catch(_) {} }, 300);
+  };
+
+  try { reconAvatar.start(); } catch(e) {
+    document.getElementById('avatarMicStatus').textContent = '❌ Error: ' + e.message;
+  }
+}
+
+function detenerConvContinua() {
+  convContinuaOn = false;
+  if (reconAvatar) { try { reconAvatar.stop(); } catch(_) {} reconAvatar = null; }
+  const btn = document.getElementById('btnConvContinua');
+  if (btn) { btn.style.background = 'rgba(6,182,212,.1)'; btn.style.color = '#67e8f9'; btn.textContent = '🔄'; }
+  document.getElementById('avatarMicStatus').textContent = '';
+}
+
 
 // ─── UTILIDADES ───────────────────────────────────────────────────
 function agregarMsgAvatar(quien, texto, id) {
