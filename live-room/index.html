@@ -767,13 +767,41 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(bv){bv.addEventListener('touchstart',e=>{e.preventDefault();iniciarGrabacion();});bv.addEventListener('touchend',e=>{e.preventDefault();pararGrabacion();});}
 });
 
-// Pre-seleccionar si viene con parámetro
-const urlP = new URLSearchParams(window.location.search);
-if(urlP.get('negocio')) {
-  const n=urlP.get('negocio');
-  const el=document.querySelector(`[onclick*="'${n}'"]`);
-  if(el) el.click();
-}
+// ── AUTO-CARGA desde demo principal ──────────────────────────────────────
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  const negocio    = p.get('negocio');
+  const nombreNeg  = p.get('nombreNegocio');
+  const ciudad     = p.get('ciudad');
+  const sector     = p.get('sector');
+  const nombre     = p.get('nombre');
+  const fromDemo   = p.get('from') === 'demo';
+
+  if (negocio) {
+    // Seleccionar negocio/nicho automáticamente
+    const el = document.querySelector(`[onclick*="'${negocio}'"]`);
+    if (el) el.click();
+  }
+  if (nombreNeg) document.getElementById('inputNegocio').value = nombreNeg;
+  if (ciudad)    document.getElementById('inputCiudad').value  = ciudad;
+  if (sector)    document.getElementById('inputSector').value  = sector;
+  if (nombre)    document.getElementById('inputNombre').value  = nombre;
+
+  // Si viene de demo → entrar automáticamente si tiene nombre
+  if (fromDemo && nombre) {
+    // Pequeño delay para que el DOM esté listo
+    setTimeout(() => {
+      // Mostrar banner "Vienes de la demo"
+      const banner = document.createElement('div');
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:linear-gradient(135deg,#ffd700,#ff6b35);color:#000;text-align:center;padding:10px;font-size:14px;font-weight:700;z-index:500;';
+      banner.innerHTML = `🎬 Vienes de la demo de ${nombreNeg||'ARIA'} — ARIA te está esperando`;
+      document.body.appendChild(banner);
+      setTimeout(() => banner.remove(), 4000);
+      // Auto-entrar
+      entrar();
+    }, 600);
+  }
+})();
 </script>
 </body>
 </html>

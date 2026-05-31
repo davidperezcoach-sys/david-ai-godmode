@@ -3797,6 +3797,10 @@ function mostrarResultadosFinal(data, clinica, ciudad) {
       </button>
       <div id="cierre-status" style="display:none;margin-top:10px;font-size:12px;color:#9ca3af;"></div>
     </div>
+    <button onclick="abrirLiveRoom()" id="btn-live-room"
+      style="width:100%;background:linear-gradient(135deg,#ffd700,#ff6b35);color:#000;border:none;border-radius:12px;padding:16px 20px;font-size:15px;font-weight:900;cursor:pointer;letter-spacing:0.3px;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 0 30px rgba(255,215,0,0.25);transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+      🤖 Hablar con ARIA en vivo — Preguntas en tiempo real
+    </button>
     <button onclick="resetearDemo()" style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);color:#a78bfa;border-radius:10px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;">🔄 Nueva demo</button>
   `;
   btnEl.dataset.clinica = clinica;
@@ -3937,6 +3941,36 @@ function setProgress(pct) {
   const txt = document.getElementById('demoPorcentaje');
   if (bar) bar.style.width = pct + '%';
   if (txt) txt.textContent = pct + '%';
+}
+
+// ── ARIA LIVE ROOM — Conectar demo con sala en vivo ─────────────────────────
+function abrirLiveRoom() {
+  // Recoger los datos de la demo actual
+  const clinica  = document.getElementById('demoClinica')?.value  || '';
+  const ciudad   = document.getElementById('demoCiudad')?.value   || '';
+  const nombre   = document.getElementById('demoNombre')?.value   || '';
+
+  // Detectar si es clínica dental u otro nicho
+  const negocioKey = 'dental'; // default para esta app; se puede extender
+
+  // Construir URL del Live Room con datos precargados
+  const params = new URLSearchParams({
+    negocio: negocioKey,
+    nombreNegocio: clinica || 'Mi Negocio',
+    ciudad: ciudad || 'España',
+    sector: 'Clínica dental',
+    nombre: nombre || 'Visitante',
+    from: 'demo'
+  });
+
+  const liveRoomUrl = `https://davidperezcoach-sys.github.io/david-ai-godmode/live-room/?${params.toString()}`;
+
+  // Anuncio de ARIA antes de abrir
+  const msg = `Perfecto. Ahora puedes hablar directamente con ARIA en tiempo real — haz cualquier pregunta sobre ${clinica || 'el sistema'} y te respondo con mi voz.`;
+  if (typeof avatarSession !== 'undefined' && avatarSession) hablarAvatar(msg); else reproducirTTS(msg);
+
+  // Abrir en nueva pestaña después de 1.5s (para que ARIA termine el anuncio)
+  setTimeout(() => window.open(liveRoomUrl, '_blank'), 1500);
 }
 
 function resetearDemo() {
