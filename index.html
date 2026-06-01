@@ -4144,237 +4144,144 @@ mostrarResultadosFinal(backendData, clinica, ciudad);
 
 
 // ── RESULTADO FINAL + QR ─────────────────────────────────────────────────
-// ── Genera HTML de landing premium en el navegador ──────────────────────
-function generarLandingHTML(clinica, ciudad, info, roi) {
-  const c1 = (info && info.colores_marca && info.colores_marca[0]) || '#1a3a5c';
-  const c2 = (info && info.colores_marca && info.colores_marca[1]) || '#c8a96e';
-  const nombre = (info && info.nombre_oficial) || clinica;
-  const rating = (info && info.rating) || '4.7';
-  const resenas = (info && info.resenas) || '89';
-  const anos = (info && info.anos_experiencia) || '10';
-  const desc = (info && info.descripcion_corta) || `Clínica dental de referencia en ${ciudad}`;
-  const impl = (info && info.precio_implante) || 'desde 890€';
-  const orto = (info && info.precio_ortodoncia) || 'desde 1.500€';
-  const horario = (info && info.horario) || 'L-V 9:00-20:00';
-  const probs = (info && info.problemas_detectados) || [];
-
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${nombre} · ${ciudad}</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#fff;color:#111;overflow-x:hidden}
-.hero{min-height:100vh;background:linear-gradient(140deg,${c1} 0%,#0d1b2a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 65% 35%,rgba(200,169,110,.18) 0%,transparent 65%)}
-.badge{position:relative;display:inline-flex;align-items:center;gap:8px;background:rgba(200,169,110,.15);border:1px solid rgba(200,169,110,.45);border-radius:50px;padding:9px 22px;margin-bottom:36px;color:${c2};font-size:13px;font-weight:700;letter-spacing:.5px;animation:fadeUp .7s ease both}
-.h1{position:relative;font-family:'Playfair Display',serif;font-size:clamp(38px,6vw,72px);font-weight:900;color:#fff;line-height:1.08;margin-bottom:22px;animation:fadeUp .7s ease .1s both}
-.h1 em{color:${c2};font-style:normal}
-.sub{position:relative;font-size:18px;color:rgba(255,255,255,.72);max-width:580px;line-height:1.65;margin-bottom:44px;animation:fadeUp .7s ease .2s both}
-.btn{position:relative;display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,${c2} 0%,#b8924a 100%);color:#fff;font-size:17px;font-weight:800;padding:18px 44px;border-radius:60px;border:none;cursor:pointer;box-shadow:0 20px 60px rgba(200,169,110,.45);transition:all .3s;animation:fadeUp .7s ease .3s both;letter-spacing:.3px}
-.btn:hover{transform:translateY(-3px);box-shadow:0 30px 80px rgba(200,169,110,.55)}
-.stats{display:flex;background:#fff;box-shadow:0 -4px 40px rgba(0,0,0,.09);border-radius:24px;margin:-44px 24px 0;position:relative;z-index:10}
-.stat{flex:1;padding:28px 16px;text-align:center;border-right:1px solid #f0f0f0}.stat:last-child{border:none}
-.sn{font-family:'Playfair Display',serif;font-size:34px;font-weight:900;color:${c1}}.sl{font-size:11px;color:#999;margin-top:5px;letter-spacing:.5px;text-transform:uppercase}
-section{padding:88px 24px;max-width:1120px;margin:0 auto}
-.stag{color:${c2};font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px}
-.stit{font-family:'Playfair Display',serif;font-size:clamp(28px,4vw,44px);font-weight:900;color:${c1};margin-bottom:18px;line-height:1.15}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:52px}
-.card{background:#f9faff;border-radius:22px;padding:34px;border:1px solid #eef0f8;transition:all .35s}
-.card:hover{transform:translateY(-7px);box-shadow:0 24px 70px rgba(26,58,92,.11);border-color:${c2}55}
-.icon{width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,${c1},${c1}99);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px}
-.ct{font-size:17px;font-weight:800;color:${c1};margin-bottom:9px}.cd{font-size:14px;color:#666;line-height:1.65}
-.testi{background:linear-gradient(140deg,${c1} 0%,#0d1b2a 100%);padding:90px 24px;text-align:center}
-.ti{max-width:720px;margin:0 auto}.stars{color:${c2};font-size:26px;margin-bottom:28px;letter-spacing:3px}
-.qt{font-family:'Playfair Display',serif;font-size:clamp(20px,3vw,28px);color:#fff;line-height:1.5;margin-bottom:32px;font-style:italic}
-.qa{color:${c2};font-weight:700;font-size:15px}
-.cta{background:linear-gradient(135deg,${c2} 0%,#b8924a 100%);padding:90px 24px;text-align:center}
-.ctat{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,50px);color:#fff;font-weight:900;margin-bottom:18px}
-.urg{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:12px;padding:12px 28px;display:inline-block;color:#fff;font-size:14px;font-weight:700;margin-bottom:36px;letter-spacing:.3px}
-.ctab{background:#fff;color:${c1};font-size:17px;font-weight:800;padding:18px 52px;border-radius:60px;text-decoration:none;display:inline-block;transition:all .3s}.ctab:hover{transform:translateY(-3px);box-shadow:0 20px 60px rgba(0,0,0,.2)}
-.ab{position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,${c1},#0d1b2a);border:1px solid rgba(200,169,110,.45);border-radius:60px;padding:13px 22px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 40px rgba(0,0,0,.3);cursor:pointer;z-index:100;transition:transform .2s}.ab:hover{transform:scale(1.04)}
-.dot{width:8px;height:8px;border-radius:50%;background:#00c9a7;box-shadow:0 0 8px #00c9a7;animation:blink 1.5s infinite}
-.at{color:#fff;font-size:13px;font-weight:700}
-#cw{display:none;position:fixed;bottom:90px;right:24px;width:350px;background:#0d1b2a;border:1px solid rgba(200,169,110,.35);border-radius:22px;box-shadow:0 24px 90px rgba(0,0,0,.45);z-index:200;overflow:hidden}
-.ch{background:linear-gradient(135deg,${c1},#0d1b2a);padding:18px 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(200,169,110,.2)}
-.cm{height:250px;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
-.ma{background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.2);border-radius:16px 16px 16px 3px;padding:11px 15px;color:#e2d5c0;font-size:13px;line-height:1.55;max-width:88%}
-.mu{background:rgba(26,58,92,.55);border-radius:16px 16px 3px 16px;padding:11px 15px;color:#fff;font-size:13px;line-height:1.55;max-width:88%;align-self:flex-end}
-.ci{display:flex;gap:8px;padding:13px 15px;border-top:1px solid rgba(200,169,110,.15)}
-.ci input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:10px 14px;color:#fff;font-size:13px;outline:none;font-family:inherit}
-.ci button{background:linear-gradient(135deg,${c2},#b8924a);color:#fff;border:none;border-radius:11px;padding:10px 16px;cursor:pointer;font-size:16px;font-weight:700}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-</style></head><body>
-<div class="hero">
-  <div class="badge">⭐ ${rating} · ${resenas} opiniones · ${anos} años de experiencia</div>
-  <h1 class="h1">Tu sonrisa perfecta<br>en <em>${ciudad}</em></h1>
-  <p class="sub">${desc}</p>
-  <button class="btn" onclick="document.getElementById('cw').style.display='block';document.getElementById('cwInp').focus()">📱 Pide tu cita gratuita ahora</button>
-</div>
-<div style="padding:0 24px">
-  <div class="stats">
-    <div class="stat"><div class="sn">${rating}⭐</div><div class="sl">Valoración</div></div>
-    <div class="stat"><div class="sn">${resenas}</div><div class="sl">Reseñas reales</div></div>
-    <div class="stat"><div class="sn">${anos}+</div><div class="sl">Años de experiencia</div></div>
-    <div class="stat"><div class="sn">24h</div><div class="sl">ARIA disponible</div></div>
-  </div>
-</div>
-<section>
-  <div class="stag">Especialidades</div>
-  <h2 class="stit">Todo lo que necesitas en un solo lugar</h2>
-  <div class="grid">
-    <div class="card"><div class="icon">🦷</div><div class="ct">Implantes dentales</div><div class="cd">${impl} · Materiales de última generación · Garantía de por vida</div></div>
-    <div class="card"><div class="icon">😁</div><div class="ct">Ortodoncia invisible</div><div class="cd">${orto} · Sin brackets visibles · Resultados en meses</div></div>
-    <div class="card"><div class="icon">✨</div><div class="ct">Blanqueamiento dental</div><div class="cd">Hasta 8 tonos más blanco · Sin dolor · Efecto inmediato</div></div>
-    <div class="card"><div class="icon">💳</div><div class="ct">Financiación sin intereses</div><div class="cd">Tu sonrisa no puede esperar. Paga cómodamente, sin recargos.</div></div>
-    <div class="card"><div class="icon">⚡</div><div class="ct">Urgencias el mismo día</div><div class="cd">Dolor, roturas o emergencias. Te atendemos sin listas de espera.</div></div>
-    <div class="card"><div class="icon">🤖</div><div class="ct">ARIA — Tu asistente 24/7</div><div class="cd">Responde, agenda y gestiona mientras tu equipo descansa.</div></div>
-  </div>
-</section>
-<div class="testi">
-  <div class="ti">
-    <div class="stars">★★★★★</div>
-    <p class="qt">"Llevaba años con miedo al dentista. En ${nombre} me trataron como en casa. Los resultados son increíbles y el proceso fue completamente indoloro."</p>
-    <div class="qa">— María García · Paciente verificada · ${ciudad}</div>
-  </div>
-</div>
-<div class="cta">
-  <h2 class="ctat">¿Lista tu primera cita gratuita?</h2>
-  <div class="urg">⏰ Solo 3 plazas disponibles esta semana en ${ciudad}</div><br>
-  <a href="#" class="ctab" onclick="document.getElementById('cw').style.display='block';return false">Habla con ARIA ahora →</a>
-</div>
-<div class="ab" onclick="document.getElementById('cw').style.display=document.getElementById('cw').style.display==='block'?'none':'block'">
-  <div class="dot"></div><span class="at">🦷 ARIA — Asistente de ${nombre}</span>
-</div>
-<div id="cw">
-  <div class="ch"><div class="dot"></div><div><div style="color:#fff;font-weight:700;font-size:14px">ARIA · ${nombre}</div><div style="color:rgba(200,169,110,.7);font-size:11px">Disponible 24h · Respuesta inmediata</div></div></div>
-  <div class="cm" id="cwMsgs"><div class="ma">¡Hola! 👋 Soy ARIA, la asistente de ${nombre} en ${ciudad}. ¿En qué puedo ayudarte hoy? Puedo informarte sobre precios, disponibilidad o agendar tu cita.</div></div>
-  <div class="ci"><input id="cwInp" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter')cwEnviar()"><button onclick="cwEnviar()">→</button></div>
-</div>
-<script>
-async function cwEnviar(){
-  const i=document.getElementById('cwInp'),m=i.value.trim();if(!m)return;i.value='';
-  const ms=document.getElementById('cwMsgs');
-  ms.innerHTML+='<div class="mu">'+m+'</div>';ms.scrollTop=ms.scrollHeight;
-  try{
-    const r=await fetch('https://api.base44.app/api/apps/69b56904ba1a680fbeac06aa/functions/ariaAgenteDemo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mensaje:m,clinica:'${nombre.replace("'","\'")}',ciudad:'${ciudad.replace("'","\'")}',precio_implante:'${impl}',precio_ortodoncia:'${orto}',horario:'${horario}'})}).then(r=>r.json());
-    ms.innerHTML+='<div class="ma">'+(r.respuesta||r.mensaje||'Un momento...')+'</div>';
-  }catch{ms.innerHTML+='<div class="ma">Puedes llamarnos directamente o visitarnos en clínica.</div>';}
-  ms.scrollTop=ms.scrollHeight;
-}
-</script>
-</body></html>`;
+// ── Abrir Landing en nueva ventana (seguro — sin template literals anidados) ──
+function abrirLandingDemo(clinica, ciudad, info, roi) {
+  var c1 = (info && info.colores_marca && info.colores_marca[0]) || '#1a3a5c';
+  var c2 = (info && info.colores_marca && info.colores_marca[1]) || '#c8a96e';
+  var nombre = (info && info.nombre_oficial) || clinica;
+  var rating = (info && info.rating) || '4.7';
+  var resenas = (info && info.resenas) || '89';
+  var anos = (info && info.anos_experiencia) || '10';
+  var desc = (info && info.descripcion_corta) || 'Clinica dental de referencia en ' + ciudad;
+  var impl = (info && info.precio_implante) || 'desde 890EUR';
+  var orto = (info && info.precio_ortodoncia) || 'desde 1.500EUR';
+  var w = window.open('', '_blank');
+  if (!w) { alert('Permite popups para ver la landing'); return; }
+  w.document.open();
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">');
+  w.document.write('<title>' + nombre + '</title>');
+  w.document.write('<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">');
+  w.document.write('<style>');
+  w.document.write('*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;background:#fff;color:#111;overflow-x:hidden}');
+  w.document.write('.hero{min-height:100vh;background:linear-gradient(140deg,' + c1 + ',#0d1b2a);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center}');
+  w.document.write('.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(200,169,110,.15);border:1px solid rgba(200,169,110,.45);border-radius:50px;padding:9px 22px;margin-bottom:36px;color:' + c2 + ';font-size:13px;font-weight:700}');
+  w.document.write('.h1{font-family:"Playfair Display",serif;font-size:clamp(38px,6vw,70px);font-weight:900;color:#fff;line-height:1.08;margin-bottom:22px}');
+  w.document.write('.h1 em{color:' + c2 + ';font-style:normal}');
+  w.document.write('.sub{font-size:18px;color:rgba(255,255,255,.72);max-width:580px;line-height:1.65;margin-bottom:44px}');
+  w.document.write('.btn{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,' + c2 + ',#b8924a);color:#fff;font-size:17px;font-weight:800;padding:18px 44px;border-radius:60px;border:none;cursor:pointer;box-shadow:0 20px 60px rgba(200,169,110,.4)}');
+  w.document.write('.stats{display:flex;background:#fff;box-shadow:0 -4px 40px rgba(0,0,0,.09);border-radius:24px;margin:-44px 24px 0;position:relative;z-index:10}');
+  w.document.write('.stat{flex:1;padding:28px 16px;text-align:center;border-right:1px solid #f0f0f0}.stat:last-child{border:none}');
+  w.document.write('.sn{font-family:"Playfair Display",serif;font-size:34px;font-weight:900;color:' + c1 + '}.sl{font-size:11px;color:#999;margin-top:5px;text-transform:uppercase}');
+  w.document.write('section{padding:88px 24px;max-width:1100px;margin:0 auto}');
+  w.document.write('.stag{color:' + c2 + ';font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px}');
+  w.document.write('.stit{font-family:"Playfair Display",serif;font-size:clamp(28px,4vw,44px);font-weight:900;color:' + c1 + ';margin-bottom:18px}');
+  w.document.write('.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:48px}');
+  w.document.write('.card{background:#f9faff;border-radius:20px;padding:32px;border:1px solid #eef0f8;transition:all .3s}');
+  w.document.write('.card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(26,58,92,.1)}');
+  w.document.write('.icon{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,' + c1 + ',' + c1 + '88);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}');
+  w.document.write('.ct{font-size:17px;font-weight:800;color:' + c1 + ';margin-bottom:8px}.cd{font-size:14px;color:#666;line-height:1.65}');
+  w.document.write('.testi{background:linear-gradient(140deg,' + c1 + ',#0d1b2a);padding:80px 24px;text-align:center}');
+  w.document.write('.stars{color:' + c2 + ';font-size:26px;margin-bottom:24px}.qt{font-family:"Playfair Display",serif;font-size:clamp(20px,3vw,26px);color:#fff;line-height:1.5;margin-bottom:28px;font-style:italic}.qa{color:' + c2 + ';font-weight:700}');
+  w.document.write('.cta{background:linear-gradient(135deg,' + c2 + ',#b8924a);padding:80px 24px;text-align:center}');
+  w.document.write('.ctat{font-family:"Playfair Display",serif;font-size:clamp(28px,4vw,46px);color:#fff;font-weight:900;margin-bottom:16px}');
+  w.document.write('.urg{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:12px 24px;display:inline-block;color:#fff;font-size:14px;font-weight:700;margin-bottom:32px}');
+  w.document.write('.ctab{background:#fff;color:' + c1 + ';font-size:17px;font-weight:800;padding:18px 48px;border-radius:60px;text-decoration:none;display:inline-block}');
+  w.document.write('.ab{position:fixed;bottom:24px;right:24px;background:linear-gradient(135deg,' + c1 + ',#0d1b2a);border:1px solid rgba(200,169,110,.4);border-radius:60px;padding:12px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 40px rgba(0,0,0,.3);cursor:pointer;z-index:100}');
+  w.document.write('.dot{width:8px;height:8px;border-radius:50%;background:#00c9a7;animation:blink 1.5s infinite}.at{color:#fff;font-size:13px;font-weight:700}');
+  w.document.write('@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}');
+  w.document.write('</style></head><body>');
+  w.document.write('<div class="hero">');
+  w.document.write('<div class="badge">&#11088; ' + rating + ' &middot; ' + resenas + ' opiniones &middot; ' + anos + ' a&ntilde;os</div>');
+  w.document.write('<h1 class="h1">Tu sonrisa perfecta<br>en <em>' + ciudad + '</em></h1>');
+  w.document.write('<p class="sub">' + desc + '</p>');
+  w.document.write('<button class="btn">&#128241; Pide tu cita gratuita ahora</button>');
+  w.document.write('</div>');
+  w.document.write('<div style="padding:0 24px"><div class="stats">');
+  w.document.write('<div class="stat"><div class="sn">' + rating + '&#11088;</div><div class="sl">Valoraci&oacute;n</div></div>');
+  w.document.write('<div class="stat"><div class="sn">' + resenas + '</div><div class="sl">Rese&ntilde;as</div></div>');
+  w.document.write('<div class="stat"><div class="sn">' + anos + '+</div><div class="sl">A&ntilde;os</div></div>');
+  w.document.write('<div class="stat"><div class="sn">24h</div><div class="sl">ARIA activa</div></div>');
+  w.document.write('</div></div>');
+  w.document.write('<section><div class="stag">Especialidades</div><h2 class="stit">Todo lo que necesitas en un solo lugar</h2><div class="grid">');
+  w.document.write('<div class="card"><div class="icon">&#129463;</div><div class="ct">Implantes dentales</div><div class="cd">' + impl + ' &middot; Materiales premium &middot; Garant&iacute;a de por vida</div></div>');
+  w.document.write('<div class="card"><div class="icon">&#128513;</div><div class="ct">Ortodoncia invisible</div><div class="cd">' + orto + ' &middot; Sin brackets &middot; Resultados en meses</div></div>');
+  w.document.write('<div class="card"><div class="icon">&#10024;</div><div class="ct">Blanqueamiento dental</div><div class="cd">Hasta 8 tonos m&aacute;s blanco &middot; Sin dolor &middot; Inmediato</div></div>');
+  w.document.write('<div class="card"><div class="icon">&#128179;</div><div class="ct">Financiaci&oacute;n sin intereses</div><div class="cd">Tu sonrisa no puede esperar. Paga c&oacute;modamente.</div></div>');
+  w.document.write('<div class="card"><div class="icon">&#9889;</div><div class="ct">Urgencias el mismo d&iacute;a</div><div class="cd">Dolor, roturas, emergencias. Sin espera.</div></div>');
+  w.document.write('<div class="card"><div class="icon">&#129302;</div><div class="ct">ARIA 24/7</div><div class="cd">Responde, agenda y gestiona mientras tu equipo descansa.</div></div>');
+  w.document.write('</div></section>');
+  w.document.write('<div class="testi"><div style="max-width:700px;margin:0 auto;text-align:center">');
+  w.document.write('<div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>');
+  w.document.write('<p class="qt">"Llevaba a&ntilde;os con miedo al dentista. En ' + nombre + ' me trataron como en casa. Resultados incre&iacute;bles."</p>');
+  w.document.write('<div class="qa">&mdash; Mar&iacute;a Garc&iacute;a &middot; Paciente verificada &middot; ' + ciudad + '</div>');
+  w.document.write('</div></div>');
+  w.document.write('<div class="cta"><h2 class="ctat">&iquest;Lista tu primera cita gratuita?</h2>');
+  w.document.write('<div class="urg">&#9200; Solo 3 plazas disponibles esta semana</div><br>');
+  w.document.write('<a href="#" class="ctab">Habla con ARIA ahora &rarr;</a></div>');
+  w.document.write('<div class="ab"><div class="dot"></div><span class="at">&#129463; ARIA &mdash; Asistente de ' + nombre + '</span></div>');
+  w.document.write('</body></html>');
+  w.document.close();
 }
 
-// ── Genera HTML de propuesta premium en el navegador ─────────────────────
-function generarPropuestaHTML(clinica, ciudad, info, roi) {
-  const nombre = (info && info.nombre_oficial) || clinica;
-  const rating = (info && info.rating) || '4.7';
-  const resenas = (info && info.resenas) || '89';
-  const probs = (info && info.problemas_detectados) || ['Llamadas perdidas fuera de horario','Sin seguimiento automático','Respuesta lenta en WhatsApp','Pacientes inactivos sin reactivar'];
-  const fecha = new Date().toLocaleDateString('es-ES',{year:'numeric',month:'long',day:'numeric'});
-  const roi_neto = roi.beneficio_neto_mes || roi.neto || 0;
-  const roi_pct = roi.roi_pct || 0;
-  const roi_perdidos = roi.leads_perdidos || roi.perdidos || 0;
-  const roi_recuperados = roi.recuperados || 0;
-  const roi_ingreso = roi.ingreso_extra_mes || roi.ingreso || 0;
-  const roi_payback = roi.payback_dias || roi.payback || 30;
-
-  return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Propuesta DentalIA PRO — ${nombre}</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#f0f2f8;color:#111}
-.page{max-width:820px;margin:0 auto;background:#fff;box-shadow:0 8px 80px rgba(0,0,0,.12)}
-.cover{background:linear-gradient(140deg,#1a3a5c 0%,#0d1b2a 100%);padding:90px 64px;color:#fff;position:relative;overflow:hidden}
-.cover::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 70% 30%,rgba(200,169,110,.15),transparent 60%)}
-.ctag{position:relative;color:#c8a96e;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:28px}
-.h1{position:relative;font-family:'Playfair Display',serif;font-size:46px;font-weight:900;line-height:1.08;margin-bottom:18px}
-.h1 span{color:#c8a96e}.csub{position:relative;font-size:18px;color:rgba(255,255,255,.68);margin-bottom:48px}
-.cbox{position:relative;background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.35);border-radius:18px;padding:26px 32px;display:inline-block}
-.cn{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px}.cc{color:#c8a96e;font-size:14px;font-weight:600}
-.cfecha{position:relative;margin-top:64px;font-size:13px;color:rgba(255,255,255,.35);letter-spacing:.3px}
-.sec{padding:52px 64px;border-bottom:1px solid #eef0f6}
-.stag{color:#c8a96e;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px}
-.stit{font-family:'Playfair Display',serif;font-size:30px;font-weight:900;color:#1a3a5c;margin-bottom:26px;line-height:1.15}
-.roi{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:36px}
-.rc{background:#f7f9fc;border:1px solid #e4e8f4;border-radius:18px;padding:26px}
-.hl{background:linear-gradient(135deg,#1a3a5c,#0d1b2a)!important;border:none!important}
-.rv{font-family:'Playfair Display',serif;font-size:38px;font-weight:900;color:#1a3a5c;margin-bottom:8px}
-.hl .rv{color:#c8a96e}.rl{font-size:13px;color:#888;line-height:1.4}.hl .rl{color:rgba(255,255,255,.55)}
-.roi-badge{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:22px 28px;display:flex;gap:28px;flex-wrap:wrap}
-.rb{font-size:13px;color:#166534;font-weight:700}
-.prob{display:flex;align-items:flex-start;gap:16px;padding:18px 0;border-bottom:1px solid #f0f2f8}.prob:last-child{border:none}
-.pi{width:38px;height:38px;border-radius:11px;background:#fef3f2;border:1px solid #fecdc9;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;margin-top:1px}
-.pt{font-size:15px;color:#374151;font-weight:600;line-height:1.5}
-.sol{background:#f0fdf4;border:1px solid #c3f0d0;border-radius:18px;padding:26px 30px;margin-bottom:18px}
-.st{font-size:16px;font-weight:800;color:#166534;margin-bottom:10px}.sd{font-size:14px;color:#374151;line-height:1.65}
-.pb{background:linear-gradient(140deg,#1a3a5c,#0d1b2a);border-radius:22px;padding:48px;text-align:center;position:relative;overflow:hidden}
-.pb::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 60% 30%,rgba(200,169,110,.12),transparent 60%)}
-.pt2{position:relative;color:#c8a96e;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:20px}
-.pn{position:relative;font-family:'Playfair Display',serif;font-size:68px;font-weight:900;color:#fff;margin-bottom:10px;line-height:1}
-.ps{position:relative;color:rgba(255,255,255,.55);font-size:15px;margin-bottom:36px}
-.pf{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left;margin-bottom:40px}
-.feat{display:flex;align-items:center;gap:9px;color:rgba(255,255,255,.82);font-size:14px}
-.feat::before{content:'✓';color:#c8a96e;font-weight:900;font-size:16px}
-.pbtn{position:relative;background:linear-gradient(135deg,#c8a96e,#b8924a);color:#fff;font-size:16px;font-weight:800;padding:18px 48px;border-radius:60px;text-decoration:none;display:inline-block;letter-spacing:.3px;box-shadow:0 12px 40px rgba(200,169,110,.4)}
-.footer{padding:36px 64px;background:#f7f9fc;border-top:1px solid #eef0f6;display:flex;justify-content:space-between;align-items:center}
-.fl{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:#1a3a5c}.fl span{color:#c8a96e}
-</style></head><body><div class="page">
-<div class="cover">
-  <div class="ctag">Propuesta personalizada · DentalIA PRO</div>
-  <h1 class="h1">Tu clínica, <span>automatizada</span><br>sin perder ni un paciente más</h1>
-  <p class="csub">Sistema de inteligencia artificial diseñado específicamente para ${nombre}</p>
-  <div class="cbox"><div class="cn">🦷 ${nombre}</div><div class="cc">📍 ${ciudad} · ${rating}⭐ · ${resenas} opiniones verificadas</div></div>
-  <div class="cfecha">Preparada el ${fecha} · Oferta válida 7 días</div>
-</div>
-<div class="sec">
-  <div class="stag">Retorno de inversión calculado</div>
-  <h2 class="stit">Lo que ganas cada mes con DentalIA PRO</h2>
-  <div class="roi">
-    <div class="rc"><div class="rv">${roi_perdidos}</div><div class="rl">Pacientes que se pierden al mes sin sistema de respuesta automática</div></div>
-    <div class="rc"><div class="rv">${roi_recuperados}</div><div class="rl">Pacientes que ARIA recupera automáticamente cada mes</div></div>
-    <div class="rc"><div class="rv">€${Number(roi_ingreso).toLocaleString()}</div><div class="rl">Ingresos extra generados al mes con el sistema activo</div></div>
-    <div class="rc hl"><div class="rv">€${Number(roi_neto).toLocaleString()}</div><div class="rl">Beneficio neto mensual (ingresos menos coste del sistema)</div></div>
-  </div>
-  <div class="roi-badge">
-    <div class="rb">📈 ROI: ${roi_pct}%</div>
-    <div class="rb">⚡ Recuperas la inversión en ${roi_payback} días</div>
-    <div class="rb">💰 Coste del sistema: €497/mes</div>
-  </div>
-</div>
-<div class="sec">
-  <div class="stag">Diagnóstico digital</div>
-  <h2 class="stit">Lo que está pasando ahora mismo en ${nombre}</h2>
-  ${probs.map(p => `<div class="prob"><div class="pi">⚠️</div><div class="pt">${p}</div></div>`).join('')}
-</div>
-<div class="sec">
-  <div class="stag">El sistema DentalIA PRO</div>
-  <h2 class="stit">Lo que construimos para ti</h2>
-  <div class="sol"><div class="st">🤖 Agente WhatsApp con IA — activo 24h al día</div><div class="sd">Responde preguntas en segundos, agenda citas, da precios y gestiona urgencias. Entrenado con los datos reales de ${nombre}. Sin errores. Sin esperas. Sin coste de personal adicional.</div></div>
-  <div class="sol"><div class="st">🌐 Landing page de alta conversión</div><div class="sd">Página diseñada con tu branding, tus fotos, tus testimonios y tu propuesta de valor. Optimizada para Google y redes sociales. Formulario de captación directo a tu CRM.</div></div>
-  <div class="sol"><div class="st">📊 CRM automático de seguimiento</div><div class="sd">Cada lead queda registrado automáticamente. ARIA hace seguimiento hasta que convierte — sin trabajo manual para tu equipo.</div></div>
-  <div class="sol"><div class="st">📈 Panel de control en tiempo real</div><div class="sd">Métricas, leads, conversiones y ROI actualizado cada hora. Sabes exactamente qué está funcionando y cuánto estás ganando.</div></div>
-</div>
-<div class="sec" style="border:none">
-  <div class="stag">Inversión</div>
-  <h2 class="stit">Simple. Transparente. Sin letra pequeña.</h2>
-  <div class="pb">
-    <div class="pt2">Plan completo DentalIA PRO</div>
-    <div class="pn">€497</div>
-    <div class="ps">al mes · Todo incluido · Sin permanencia · Sin costes ocultos</div>
-    <div class="pf">
-      <div class="feat">Agente WhatsApp IA</div><div class="feat">Landing page premium</div>
-      <div class="feat">CRM automático</div><div class="feat">Panel de control</div>
-      <div class="feat">Soporte prioritario</div><div class="feat">Actualizaciones incluidas</div>
-      <div class="feat">Sin costes ocultos</div><div class="feat">Activo en 48 horas</div>
-    </div>
-    <a href="#" class="pbtn">Activar mi sistema ahora →</a>
-  </div>
-</div>
-<div class="footer">
-  <div class="fl">Dental<span>IA</span> PRO</div>
-  <div style="font-size:12px;color:#999">Propuesta preparada por ARIA · ${fecha}</div>
-</div>
-</div></body></html>`;
+// ── Abrir Propuesta en nueva ventana (seguro) ─────────────────────────────
+function abrirPropuestaDemo(clinica, ciudad, info, roi) {
+  var nombre = (info && info.nombre_oficial) || clinica;
+  var rating = (info && info.rating) || '4.7';
+  var resenas = (info && info.resenas) || '89';
+  var probs = (info && info.problemas_detectados) || ['Llamadas perdidas fuera de horario','Sin seguimiento automatico','Respuesta lenta en WhatsApp','Pacientes inactivos sin reactivar'];
+  var fecha = new Date().toLocaleDateString('es-ES',{year:'numeric',month:'long',day:'numeric'});
+  var roi_neto = (roi && (roi.beneficio_neto_mes || roi.neto)) || 0;
+  var roi_pct = (roi && roi.roi_pct) || 0;
+  var roi_perdidos = (roi && (roi.leads_perdidos || roi.perdidos)) || 0;
+  var roi_recuperados = (roi && roi.recuperados) || 0;
+  var roi_ingreso = (roi && (roi.ingreso_extra_mes || roi.ingreso)) || 0;
+  var roi_payback = (roi && (roi.payback_dias || roi.payback)) || 30;
+  var w = window.open('', '_blank');
+  if (!w) { alert('Permite popups para ver la propuesta'); return; }
+  w.document.open();
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Propuesta &mdash; ' + nombre + '</title>');
+  w.document.write('<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">');
+  w.document.write('<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,sans-serif;background:#f0f2f8;color:#111}.page{max-width:820px;margin:0 auto;background:#fff;box-shadow:0 8px 80px rgba(0,0,0,.12)}.cover{background:linear-gradient(140deg,#1a3a5c,#0d1b2a);padding:80px 60px;color:#fff}.ctag{color:#c8a96e;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:24px}.h1{font-family:"Playfair Display",serif;font-size:42px;font-weight:900;line-height:1.1;margin-bottom:16px;color:#fff}.h1 span{color:#c8a96e}.csub{font-size:17px;color:rgba(255,255,255,.68);margin-bottom:44px}.cbox{background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.35);border-radius:16px;padding:24px 28px;display:inline-block}.cn{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px}.cc{color:#c8a96e;font-size:14px}.cfecha{margin-top:60px;font-size:13px;color:rgba(255,255,255,.35)}.sec{padding:48px 60px;border-bottom:1px solid #eef0f6}.stag{color:#c8a96e;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px}.stit{font-family:"Playfair Display",serif;font-size:28px;font-weight:900;color:#1a3a5c;margin-bottom:24px}.roi{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}.rc{background:#f7f9fc;border:1px solid #e4e8f4;border-radius:16px;padding:24px}.hl{background:linear-gradient(135deg,#1a3a5c,#0d1b2a)!important;border:none!important}.rv{font-family:"Playfair Display",serif;font-size:36px;font-weight:900;color:#1a3a5c;margin-bottom:8px}.hl .rv{color:#c8a96e}.rl{font-size:13px;color:#888}.hl .rl{color:rgba(255,255,255,.55)}.prob{display:flex;align-items:flex-start;gap:14px;padding:16px 0;border-bottom:1px solid #f0f2f8}.prob:last-child{border:none}.pi{width:36px;height:36px;border-radius:10px;background:#fef3f2;border:1px solid #fecdc9;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}.pt{font-size:15px;color:#374151;font-weight:600}.sol{background:#f0fdf4;border:1px solid #c3f0d0;border-radius:16px;padding:24px 28px;margin-bottom:16px}.st{font-size:16px;font-weight:800;color:#166534;margin-bottom:10px}.sd{font-size:14px;color:#374151;line-height:1.65}.pb{background:linear-gradient(140deg,#1a3a5c,#0d1b2a);border-radius:20px;padding:44px;text-align:center}.pt2{color:#c8a96e;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:18px}.pn{font-family:"Playfair Display",serif;font-size:64px;font-weight:900;color:#fff;margin-bottom:10px}.ps{color:rgba(255,255,255,.55);font-size:15px;margin-bottom:32px}.pf{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left;margin-bottom:36px}.feat{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.82);font-size:14px}.feat::before{content:"\\2713";color:#c8a96e;font-weight:900}.pbtn{background:linear-gradient(135deg,#c8a96e,#b8924a);color:#fff;font-size:16px;font-weight:800;padding:16px 44px;border-radius:60px;text-decoration:none;display:inline-block}.footer{padding:32px 60px;background:#f7f9fc;border-top:1px solid #eef0f6;display:flex;justify-content:space-between;align-items:center}.fl{font-family:"Playfair Display",serif;font-size:18px;font-weight:900;color:#1a3a5c}.fl span{color:#c8a96e}</style></head><body>');
+  w.document.write('<div class="page"><div class="cover">');
+  w.document.write('<div class="ctag">Propuesta personalizada &middot; DentalIA PRO</div>');
+  w.document.write('<h1 class="h1">Tu cl&iacute;nica, <span>automatizada</span><br>sin perder ni un paciente m&aacute;s</h1>');
+  w.document.write('<p class="csub">Sistema IA dise&ntilde;ado espec&iacute;ficamente para ' + nombre + '</p>');
+  w.document.write('<div class="cbox"><div class="cn">&#129463; ' + nombre + '</div><div class="cc">&#128205; ' + ciudad + ' &middot; ' + rating + '&#11088; &middot; ' + resenas + ' opiniones</div></div>');
+  w.document.write('<div class="cfecha">Preparada el ' + fecha + ' &middot; V&aacute;lida 7 d&iacute;as</div></div>');
+  w.document.write('<div class="sec"><div class="stag">Retorno de inversi&oacute;n</div><h2 class="stit">Lo que ganas cada mes</h2>');
+  w.document.write('<div class="roi">');
+  w.document.write('<div class="rc"><div class="rv">' + roi_perdidos + '</div><div class="rl">Pacientes perdidos al mes sin sistema</div></div>');
+  w.document.write('<div class="rc"><div class="rv">' + roi_recuperados + '</div><div class="rl">Pacientes recuperados con ARIA</div></div>');
+  w.document.write('<div class="rc"><div class="rv">&euro;' + Number(roi_ingreso).toLocaleString() + '</div><div class="rl">Ingresos extra al mes</div></div>');
+  w.document.write('<div class="rc hl"><div class="rv">&euro;' + Number(roi_neto).toLocaleString() + '</div><div class="rl">Beneficio neto mensual</div></div>');
+  w.document.write('</div>');
+  w.document.write('<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:18px 22px;display:flex;gap:24px;flex-wrap:wrap">');
+  w.document.write('<span style="color:#166534;font-weight:700;font-size:13px">&#128200; ROI: ' + roi_pct + '%</span> ');
+  w.document.write('<span style="color:#166534;font-weight:700;font-size:13px">&#9889; Recuperas en ' + roi_payback + ' d&iacute;as</span> ');
+  w.document.write('<span style="color:#166534;font-weight:700;font-size:13px">&#128176; Coste: &euro;497/mes</span>');
+  w.document.write('</div></div>');
+  w.document.write('<div class="sec"><div class="stag">Diagn&oacute;stico</div><h2 class="stit">Lo que est&aacute; pasando ahora mismo</h2>');
+  for (var i = 0; i < probs.length; i++) {
+    w.document.write('<div class="prob"><div class="pi">&#9888;&#65039;</div><div class="pt">' + probs[i] + '</div></div>');
+  }
+  w.document.write('</div>');
+  w.document.write('<div class="sec"><div class="stag">El sistema DentalIA PRO</div><h2 class="stit">Lo que construimos para ti</h2>');
+  w.document.write('<div class="sol"><div class="st">&#129302; Agente WhatsApp IA &mdash; 24h</div><div class="sd">Responde, agenda citas y gestiona urgencias. Entrenado para ' + nombre + '.</div></div>');
+  w.document.write('<div class="sol"><div class="st">&#127760; Landing page de alta conversi&oacute;n</div><div class="sd">Con tu branding, especialidades y testimonios. Optimizada para Google.</div></div>');
+  w.document.write('<div class="sol"><div class="st">&#128202; CRM autom&aacute;tico</div><div class="sd">Cada lead registrado. ARIA hace seguimiento hasta que convierte.</div></div>');
+  w.document.write('<div class="sol"><div class="st">&#128200; Panel de control en tiempo real</div><div class="sd">M&eacute;tricas, leads y ROI actualizado cada hora.</div></div>');
+  w.document.write('</div>');
+  w.document.write('<div class="sec" style="border:none"><div class="stag">Inversi&oacute;n</div><h2 class="stit">Simple. Transparente.</h2>');
+  w.document.write('<div class="pb"><div class="pt2">Plan completo DentalIA PRO</div><div class="pn">&euro;497</div><div class="ps">al mes &middot; Todo incluido &middot; Sin permanencia</div>');
+  w.document.write('<div class="pf">');
+  w.document.write('<div class="feat">Agente WhatsApp IA</div><div class="feat">Landing page premium</div>');
+  w.document.write('<div class="feat">CRM autom&aacute;tico</div><div class="feat">Panel de control</div>');
+  w.document.write('<div class="feat">Soporte prioritario</div><div class="feat">Actualizaciones</div>');
+  w.document.write('<div class="feat">Sin costes ocultos</div><div class="feat">Activo en 48 horas</div>');
+  w.document.write('</div><a href="#" class="pbtn">Activar mi sistema ahora &rarr;</a></div></div>');
+  w.document.write('<div class="footer"><div class="fl">Dental<span>IA</span> PRO</div><div style="font-size:12px;color:#999">ARIA &middot; ' + fecha + '</div></div>');
+  w.document.write('</div></body></html>');
+  w.document.close();
 }
 
 function mostrarResultadosFinal(data, clinica, ciudad) {
@@ -4386,43 +4293,42 @@ function mostrarResultadosFinal(data, clinica, ciudad) {
   const roi_mes = roi.beneficio_neto_mes ? '€' + Number(roi.beneficio_neto_mes).toLocaleString() : (roi.neto ? '€' + Number(roi.neto).toLocaleString() : '€12.400+');
   const roi_pct = roi.roi_pct ? roi.roi_pct + '% ROI' : 'Alto ROI';
 
-  // Generar landing y propuesta en el navegador (no depende del backend)
-  const landingHTML  = generarLandingHTML(clinica, ciudad, info, roi);
-  const propuestaHTML = generarPropuestaHTML(clinica, ciudad, info, roi);
-  const landingUrl   = c.landing   || 'data:text/html;charset=utf-8,' + encodeURIComponent(landingHTML);
-  const propuestaUrl = c.propuesta || 'data:text/html;charset=utf-8,' + encodeURIComponent(propuestaHTML);
+  // Guardar datos para botones de apertura
+  window._demoInfo = info;
+  window._demoRoi = roi;
+  window._demoClinica = clinica;
+  window._demoCiudad = ciudad;
 
   const cards = [
-    { emoji:'💰', titulo:'ROI Mensual',     valor:roi_mes,    sub:roi_pct,                   color:'#86efac', bg:'rgba(0,255,136,.08)',   border:'rgba(0,255,136,.25)',   url:null },
-    { emoji:'🤖', titulo:'Agente WhatsApp', valor:'✅ Activo', sub:'Entrenado para '+clinica, color:'#a78bfa', bg:'rgba(139,92,246,.08)', border:'rgba(139,92,246,.25)',  url:null },
-    { emoji:'🌐', titulo:'Landing Page',    valor:'✅ Lista',  sub:'Abrir →',                 color:'#60a5fa', bg:'rgba(59,130,246,.08)', border:'rgba(59,130,246,.25)',   url:landingUrl },
-    { emoji:'📄', titulo:'Propuesta',       valor:'✅ Lista',  sub:'Ver propuesta →',          color:'#fbbf24', bg:'rgba(245,158,11,.08)', border:'rgba(245,158,11,.25)',  url:propuestaUrl },
+    { emoji:'💰', titulo:'ROI Mensual',     valor:roi_mes,    sub:roi_pct,    color:'#86efac', bg:'rgba(0,255,136,.08)',   border:'rgba(0,255,136,.25)',   fn:null },
+    { emoji:'🤖', titulo:'Agente WhatsApp', valor:'✅ Activo', sub:'Entrenado para '+clinica, color:'#a78bfa', bg:'rgba(139,92,246,.08)', border:'rgba(139,92,246,.25)',  fn:null },
+    { emoji:'🌐', titulo:'Landing Page',    valor:'✅ Lista',  sub:'Abrir landing →',  color:'#60a5fa', bg:'rgba(59,130,246,.08)', border:'rgba(59,130,246,.25)',  fn:'landing' },
+    { emoji:'📄', titulo:'Propuesta',       valor:'✅ Lista',  sub:'Ver propuesta →',  color:'#fbbf24', bg:'rgba(245,158,11,.08)', border:'rgba(245,158,11,.25)', fn:'propuesta' },
   ];
 
   const boxCards = document.getElementById('demoCards');
-  boxCards.innerHTML = cards.map(card =>
-    `<div onclick="${card.url ? `window.open('${card.url}','_blank')` : 'void(0)'}"
-      style="background:${card.bg};border:1px solid ${card.border};border-radius:18px;padding:20px 18px;cursor:${card.url ? 'pointer' : 'default'};transition:all .25s;position:relative;overflow:hidden;"
-      onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 48px rgba(0,0,0,.2)'"
-      onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='none'">
-      <div style="font-size:26px;margin-bottom:10px;">${card.emoji}</div>
-      <div style="color:${card.color};font-weight:900;font-size:16px;margin-bottom:4px;">${card.valor}</div>
-      <div style="color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:1px;">${card.titulo}</div>
-      ${card.url ? `<div style="color:${card.color};font-size:11px;margin-top:6px;font-weight:700;opacity:.8;">${card.sub}</div>` : `<div style="color:#6b7280;font-size:11px;margin-top:6px;">${card.sub}</div>`}
-      ${card.url ? `<div style="position:absolute;top:12px;right:12px;width:7px;height:7px;border-radius:50%;background:${card.color};box-shadow:0 0 8px ${card.color};opacity:.8;"></div>` : ''}
-    </div>`
-  ).join('');
+  boxCards.innerHTML = cards.map(function(card) {
+    var clickFn = 'void(0)';
+    if (card.fn === 'landing') clickFn = 'abrirLandingDemo(window._demoClinica,window._demoCiudad,window._demoInfo,window._demoRoi)';
+    if (card.fn === 'propuesta') clickFn = 'abrirPropuestaDemo(window._demoClinica,window._demoCiudad,window._demoInfo,window._demoRoi)';
+    var dot = card.fn ? '<div style="position:absolute;top:10px;right:10px;width:7px;height:7px;border-radius:50%;background:'+card.color+';box-shadow:0 0 8px '+card.color+'"></div>' : '';
+    return '<div onclick="'+clickFn+'" style="background:'+card.bg+';border:1px solid '+card.border+';border-radius:18px;padding:20px 18px;cursor:'+(card.fn?'pointer':'default')+';transition:all .25s;position:relative;" onmouseover="this.style.transform=\'translateY(-4px)\'" onmouseout="this.style.transform=\'translateY(0)\'">'
+      + '<div style="font-size:26px;margin-bottom:10px;">'+card.emoji+'</div>'
+      + '<div style="color:'+card.color+';font-weight:900;font-size:16px;margin-bottom:4px;">'+card.valor+'</div>'
+      + '<div style="color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:1px;">'+card.titulo+'</div>'
+      + '<div style="color:'+(card.fn?card.color:'#6b7280')+';font-size:11px;margin-top:6px;font-weight:'+(card.fn?'700':'400')+';">'+card.sub+'</div>'
+      + dot + '</div>';
+  }).join('');
+
 
   // ── QR ──────────────────────────────────────────────────────────────────
-  const qrUrl = landingUrl || propuestaUrl || `https://dentaliapro.com/demo?clinica=${encodeURIComponent(clinica)}`;
+  const qrUrl = 'https://dentaliapro.com/demo?clinica=' + encodeURIComponent(clinica);
   const qrEl = document.createElement('div');
-  qrEl.style.cssText = 'grid-column:1/-1;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15);border-radius:16px;padding:20px;text-align:center;margin-top:8px;animation:fadeIn .6s ease;';
-  qrEl.innerHTML = `
-    <div style="font-size:14px;font-weight:700;color:#86efac;margin-bottom:12px;">📱 Escanea y llévate todo al móvil ahora</div>
-    <img src="${generarQR(qrUrl)}" style="width:130px;height:130px;border-radius:12px;border:2px solid rgba(0,255,136,.4);" alt="QR" />
-    <div style="font-size:12px;color:#6b7280;margin-top:10px;">Landing + Agente + Propuesta</div>
-    <div style="font-size:11px;color:rgba(0,255,136,.5);margin-top:4px;">${clinica} · ${ciudad}</div>
-  `;
+  qrEl.style.cssText = 'grid-column:1/-1;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.15);border-radius:16px;padding:20px;text-align:center;margin-top:8px;';
+  qrEl.innerHTML = '<div style="font-size:14px;font-weight:700;color:#86efac;margin-bottom:12px;">&#128241; Escanea y ll&eacute;vate todo al m&oacute;vil ahora</div>'
+    + '<img src="' + generarQR(qrUrl) + '" style="width:130px;height:130px;border-radius:12px;border:2px solid rgba(0,255,136,.4);" alt="QR" />'
+    + '<div style="font-size:12px;color:#6b7280;margin-top:10px;">Landing + Agente + Propuesta</div>'
+    + '<div style="font-size:11px;color:rgba(0,255,136,.5);margin-top:4px;">' + clinica + ' &middot; ' + ciudad + '</div>';
   boxCards.appendChild(qrEl);
 
   // ── BOTÓN CIERRE CON VIDEO HEYGEN ────────────────────────────────────
