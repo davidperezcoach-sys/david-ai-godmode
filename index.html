@@ -147,8 +147,8 @@ body{color:var(--t);font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-se
   width:100%; height:100%;
 }
 #panelChat { opacity:1; visibility:visible; z-index:10; }
-#panelDemo { opacity:0; visibility:hidden; z-index:0; background:#07070f; pointer-events:none; overflow-y:auto; }
-#panelDemo.activo { opacity:1; visibility:visible; z-index:10; pointer-events:all; display:flex; overflow-y:auto; }
+#panelDemo { opacity:0; visibility:hidden; z-index:0; background:#07070f; pointer-events:none; flex-direction:column; }
+#panelDemo.activo { opacity:1; visibility:visible; z-index:10; pointer-events:all; display:flex !important; flex-direction:column; overflow-y:auto; background:#07070f; min-height:0; }
 #panelChat.oculto { opacity:0; visibility:hidden; z-index:0; pointer-events:none; }
 
 /* ── MODO REUNIÓN ── */
@@ -2690,7 +2690,7 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
       <div id="panelDemo">
 
         <!-- Formulario -->
-        <div id="demoFormPanel" style="padding:28px 24px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;">
+        <div id="demoFormPanel" style="padding:28px 24px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;min-height:100%;background:#07070f;">
           <div>
             <div style="color:#86efac;font-weight:800;font-size:16px;margin-bottom:6px;">⚡ ARIA construye en vivo</div>
             <div style="color:#666;font-size:13px;">Pon los datos de la clínica y ARIA construye su sistema completo mientras te lo explica paso a paso</div>
@@ -3591,11 +3591,20 @@ function toggleModoDemo() {
   if (modoDemoActivo) {
     panelChat.classList.add('oculto');
     panelDemo.classList.add('activo');
+    // Forzar visibilidad explícita
+    panelDemo.style.display = 'flex';
+    panelDemo.style.flexDirection = 'column';
+    panelDemo.style.opacity = '1';
+    panelDemo.style.visibility = 'visible';
+    panelDemo.style.zIndex = '10';
+    panelDemo.style.pointerEvents = 'all';
+    panelDemo.style.overflowY = 'auto';
+    panelDemo.style.background = '#07070f';
     // Asegurarse que el formulario es visible (no el panel de build)
     const fp = document.getElementById('demoFormPanel');
     const bp = document.getElementById('demoBuildPanel');
     const dr = document.getElementById('demoResultados');
-    if (fp) fp.style.display = 'flex';
+    if (fp) { fp.style.display = 'flex'; fp.style.flexDirection = 'column'; }
     if (bp) bp.style.display = 'none';
     if (dr) dr.style.display = 'none';
     btn.style.background = 'rgba(0,255,136,.2)';
