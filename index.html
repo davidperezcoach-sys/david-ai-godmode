@@ -915,8 +915,18 @@ function hideTyping(){const t=document.getElementById('typ');if(t)t.remove();}
 // ════════════════════════════════════════════
 // REPRODUCIR AUDIO
 // ════════════════════════════════════════════
+function ariaSetSpeaking(on){
+  const box = document.getElementById('ariaVisualBox');
+  const badge = document.getElementById('ariaBadgeEstado');
+  const waves = document.getElementById('ariaWaves');
+  if(box){ if(on) box.classList.add('aria-speaking'); else box.classList.remove('aria-speaking'); }
+  if(badge){ badge.textContent = on ? '🎙️ HABLANDO' : '● LISTA'; }
+  if(waves){ waves.style.opacity = on ? '1' : '0.3'; }
+}
+
 async function playUrl(url,btn=null){
   if(btn)btn.textContent='⏸ Reproduciendo...';
+  ariaSetSpeaking(true);
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
     await ctx.resume();
@@ -924,14 +934,14 @@ async function playUrl(url,btn=null){
     const buf=await ctx.decodeAudioData(ab);
     const src=ctx.createBufferSource();
     src.buffer=buf;src.connect(ctx.destination);
-    src.onended=()=>{if(btn)btn.textContent='▶ Escuchar';};
+    src.onended=()=>{ ariaSetSpeaking(false); if(btn)btn.textContent='▶ Escuchar'; };
     src.start(0);return true;
   }catch(e1){
     try{
       const a=new Audio(url);a.volume=1;
-      a.onended=()=>{if(btn)btn.textContent='▶ Escuchar';};
+      a.onended=()=>{ ariaSetSpeaking(false); if(btn)btn.textContent='▶ Escuchar'; };
       await a.play();return true;
-    }catch(e2){return false;}
+    }catch(e2){ ariaSetSpeaking(false); return false;}
   }
 }
 
@@ -2582,39 +2592,78 @@ window.addEventListener('DOMContentLoaded', () => selTipo('presentacion'));
   <!-- ══ SPLIT: AVATAR | PANEL ══ -->
   <div style="display:flex;height:calc(100vh - 52px);overflow:hidden;">
 
-    <!-- ══ COLUMNA IZQUIERDA: AVATAR ══ -->
-    <div style="width:300px;min-width:260px;background:#050508;border-right:1px solid rgba(139,92,246,.15);display:flex;flex-direction:column;align-items:center;padding:20px 16px;gap:14px;flex-shrink:0;">
-      
-      <!-- Video avatar vertical -->
-      <div id="avatarVideoBox" style="width:100%;flex:1;max-height:420px;background:#0d0d1a;border-radius:18px;border:1px solid rgba(139,92,246,.3);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;">
-        <div id="avatarPlaceholder" style="text-align:center;color:#7c6fa0;padding:20px;">
-          <div style="font-size:52px;margin-bottom:10px;">🎭</div>
-          <div style="font-size:13px;line-height:1.5;">Pulsa<br>▶ Iniciar Avatar</div>
+    <!-- ══ COLUMNA IZQUIERDA: ARIA VISUAL PREMIUM ══ -->
+    <div style="width:300px;min-width:260px;background:#050508;border-right:1px solid rgba(0,201,167,.12);display:flex;flex-direction:column;align-items:center;padding:20px 16px;gap:16px;flex-shrink:0;">
+
+      <!-- ARIA VISUAL — Orbe animado premium -->
+      <div id="ariaVisualBox" style="width:100%;flex:1;max-height:420px;background:radial-gradient(ellipse at 50% 60%, rgba(0,201,167,0.07) 0%, #080810 70%);border-radius:18px;border:1px solid rgba(0,201,167,.2);overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+
+        <!-- Anillos orbitales de fondo -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+          <div style="width:220px;height:220px;border-radius:50%;border:1px solid rgba(0,201,167,0.06);animation:orbitPulse 4s ease-in-out infinite;"></div>
+          <div style="position:absolute;width:170px;height:170px;border-radius:50%;border:1px solid rgba(0,201,167,0.1);animation:orbitPulse 3s ease-in-out infinite 0.5s;"></div>
+          <div style="position:absolute;width:120px;height:120px;border-radius:50%;border:1px solid rgba(0,201,167,0.15);animation:orbitPulse 2.5s ease-in-out infinite 1s;"></div>
         </div>
-        <video id="avatarVideo" style="width:100%;height:100%;object-fit:cover;display:none;" autoplay playsinline></video>
-        <div id="avatarSpeakingBadge" style="display:none;position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(139,92,246,.9);color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;">🎙️ ARIA hablando…</div>
+
+        <!-- Logo central ARIA -->
+        <div id="ariaOrbe" style="position:relative;width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#00c9a7,#0a1628);display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(0,201,167,0.3), 0 0 80px rgba(0,201,167,0.1);transition:all .3s;z-index:2;">
+          <span style="font-size:38px;">🦷</span>
+        </div>
+
+        <!-- Nombre ARIA -->
+        <div style="position:relative;z-index:2;text-align:center;margin-top:16px;">
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:#fff;letter-spacing:2px;">ARIA</div>
+          <div style="font-size:11px;color:rgba(0,201,167,0.7);letter-spacing:3px;margin-top:2px;text-transform:uppercase;">DentalIA PRO</div>
+        </div>
+
+        <!-- Estado / ondas de voz -->
+        <div id="ariaStatusBox" style="position:relative;z-index:2;margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px;">
+          <!-- Ondas de audio — visibles cuando habla -->
+          <div id="ariaWaves" style="display:flex;align-items:flex-end;gap:3px;height:36px;opacity:0.3;transition:opacity .3s;">
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.0s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.1s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.2s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.3s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.4s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.5s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.6s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.7s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.8s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 0.9s;"></div>
+            <div class="aria-bar" style="width:4px;border-radius:2px;background:#00c9a7;animation:wave 1.2s ease-in-out infinite 1.0s;"></div>
+          </div>
+          <!-- Badge estado -->
+          <div id="ariaBadgeEstado" style="background:rgba(0,201,167,0.1);border:1px solid rgba(0,201,167,0.25);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:700;color:#00c9a7;letter-spacing:1px;">● LISTA</div>
+        </div>
+
+        <!-- Imagen paso demo (se muestra durante la demo) -->
+        <div id="avatarStepImg" style="display:none;position:absolute;bottom:0;left:0;right:0;border-radius:0 0 18px 18px;overflow:hidden;">
+          <img id="avatarStepImgEl" src="" style="width:100%;height:auto;display:block;object-fit:cover;" />
+          <div id="avatarStepLabel" style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.85));color:#86efac;font-size:11px;font-weight:700;padding:10px;text-align:center;"></div>
+        </div>
       </div>
 
-      <!-- Botones arranque -->
-      <div style="display:flex;gap:8px;width:100%;">
-        <button id="btnIniciarAvatar" onclick="iniciarAvatar()" style="flex:1;background:linear-gradient(135deg,#7c3aed,#5b21b6);color:#fff;border:none;border-radius:12px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">▶ Iniciar</button>
-        <button id="btnDetenerAvatar" onclick="detenerAvatar()" style="display:none;flex:1;background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);border-radius:12px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">⏹ Detener</button>
+      <!-- Info clínica activa -->
+      <div id="ariaClinicaInfo" style="width:100%;background:rgba(0,201,167,0.05);border:1px solid rgba(0,201,167,0.12);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:10px;color:rgba(0,201,167,0.6);font-weight:700;letter-spacing:2px;text-transform:uppercase;">Analizando</div>
+        <div id="ariaClinicaNombre" style="font-size:13px;font-weight:800;color:#fff;">Tu clínica dental</div>
+        <div id="ariaClinicaCiudad" style="font-size:11px;color:#64748b;">Esperando datos...</div>
       </div>
 
-      <!-- Selector avatares -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
-        <button onclick="cambiarAvatar('aria')"  class="av-sel" id="avBtn_aria"   style="background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.5);color:#c4b5fd;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700;">Ann ✓</button>
-        <button onclick="cambiarAvatar('judy')"  class="av-sel" id="avBtn_judy"   style="background:rgba(30,30,50,.5);border:1px solid rgba(100,100,150,.3);color:#9ca3af;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;">Judy</button>
-        <button onclick="cambiarAvatar('shawn')" class="av-sel" id="avBtn_shawn"  style="background:rgba(30,30,50,.5);border:1px solid rgba(100,100,150,.3);color:#9ca3af;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;">Shawn</button>
-        <button onclick="cambiarAvatar('doctor')" class="av-sel" id="avBtn_doctor" style="background:rgba(30,30,50,.5);border:1px solid rgba(100,100,150,.3);color:#9ca3af;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;">Dexter</button>
-      </div>
-
-      <div style="font-size:10px;color:#3d3560;text-align:center;">LiveAvatar · Labios + Manos + Expresiones</div>
-      <!-- Imagen activa del paso actual — aparece bajo el avatar durante la demo -->
-      <div id="avatarStepImg" style="display:none;width:100%;border-radius:14px;overflow:hidden;border:1px solid rgba(0,255,136,.25);position:relative;">
-        <img id="avatarStepImgEl" src="" style="width:100%;height:auto;display:block;object-fit:cover;" />
-        <div id="avatarStepLabel" style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.8));color:#86efac;font-size:11px;font-weight:700;padding:10px 10px 7px;text-align:center;"></div>
-      </div>
+      <!-- Estilos animaciones -->
+      <style>
+        @keyframes wave {
+          0%, 100% { height: 6px; }
+          50% { height: 32px; }
+        }
+        @keyframes orbitPulse {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.04); }
+        }
+        .aria-speaking #ariaWaves { opacity: 1 !important; }
+        .aria-speaking #ariaOrbe { box-shadow: 0 0 60px rgba(0,201,167,0.6), 0 0 120px rgba(0,201,167,0.2) !important; }
+        .aria-speaking #ariaBadgeEstado { background: rgba(0,201,167,0.2) !important; border-color: rgba(0,201,167,0.5) !important; color: #00ffcc !important; }
+      </style>
     </div>
 
     <!-- ══ COLUMNA DERECHA: CHAT o DEMO ══ -->
@@ -2963,7 +3012,7 @@ function programarSwap() {
 // ─── FALLBACK ELEGANTE (si todo falla) ───────────────────────────
 function activarFallbackElegante() {
   const video = document.getElementById('avatarVideo');
-  const box   = document.getElementById('avatarVideoBox');
+  const box = document.getElementById('ariaVisualBox');
   video.style.display = 'none';
   
   // Mostrar avatar CSS animado con ondas
@@ -3163,7 +3212,7 @@ function detenerAvatar() {
   const video = document.getElementById('avatarVideo');
   video.srcObject = null; video.style.display = 'none'; video.style.opacity = '1';
   document.getElementById('avatarPlaceholder').style.display = 'flex';
-  document.getElementById('avatarSpeakingBadge').style.display = 'none';
+  const _wb = document.getElementById('ariaVisualBox'); if(_wb) _wb.classList.remove('aria-speaking'); const _ab = document.getElementById('ariaBadgeEstado'); if(_ab) _ab.textContent = '● LISTA';
   document.getElementById('btnIniciarAvatar').style.display = 'block';
   document.getElementById('btnIniciarAvatar').disabled = false;
   document.getElementById('btnIniciarAvatar').textContent = '▶ Iniciar Avatar';
@@ -3176,7 +3225,7 @@ function detenerAvatar() {
 
 // ─── HACER HABLAR AL AVATAR ───────────────────────────────────────
 async function hablarAvatar(texto) {
-  const badge = document.getElementById('avatarSpeakingBadge');
+  const badge = document.getElementById('ariaBadgeEstado');
   if (badge) badge.style.display = 'block';
   try {
     // ÚNICA fuente de audio: ElevenLabs (voz de ARIA Flowie)
